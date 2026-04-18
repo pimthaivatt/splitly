@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#06C755" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<title>Splitly — for LINE</title>
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<style>
+  :root {
+    --primary: #06C755;
+    --primary-dark: #04A648;
+    --primary-darker: #028A39;
+    --primary-light: #E8F8EE;
+    --bg: #F7F8FA;
+    --card: #FFFFFF;
+    --text: #111827;
+    --text-2: #4B5563;
+    --muted: #9CA3AF;
+    --border: #E5E7EB;
+    --border-soft: #F3F4F6;
+    --danger: #EF4444;
+    --warn: #F59E0B;
+    --success: #06C755;
+    --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 4px 14px rgba(0,0,0,0.04);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Hiragino Sans",
+                 "Yu Gothic", "Meiryo", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 16px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app {
+    max-width: 540px;
+    margin: 0 auto;
+    padding: 0 14px calc(var(--safe-bottom) + 100px);
+  }
+
+  /* ---------- LINE-style header ---------- */
+  header {
+    margin: 0 -14px 14px;
+    padding: calc(var(--safe-top) + 14px) 16px 16px;
+    background: linear-gradient(135deg, var(--primary) 0%, #00B900 100%);
+    color: white;
+    border-radius: 0 0 18px 18px;
+  }
+  header .top-row {
+    display: flex; align-items: center; gap: 10px;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    flex: 1;
+    display: flex; align-items: center; gap: 8px;
+  }
+  header .logo {
+    width: 30px; height: 30px;
+    border-radius: 9px;
+    background: white;
+    color: var(--primary);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 16px;
+  }
+  .liff-status {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    background: rgba(255,255,255,0.22);
+    color: white;
+  }
+  .user-badge {
+    display: inline-flex;
+    align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.22);
+    padding: 4px 10px 4px 4px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .user-badge .pic {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: white;
+    color: var(--primary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800;
+    overflow: hidden;
+  }
+  .user-badge .pic img { width:100%; height:100%; object-fit:cover; }
+  header .subtitle {
+    margin-top: 6px;
+    font-size: 12px;
+    opacity: 0.9;
+  }
+
+  /* ---------- Cards ---------- */
+  .card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: var(--shadow);
+    margin-bottom: 12px;
+  }
+  .card h2 {
+    margin: 0 0 12px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .step {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    font-weight: 700;
+  }
+
+  /* ---------- LIFF welcome ---------- */
+  .liff-welcome {
+    background: var(--primary-light);
+    color: var(--primary-darker);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 12px;
+    display: none;
+  }
+  .liff-welcome.show { display: block; }
+
+  /* ---------- Inputs ---------- */
+  label {
+    font-size: 12px;
+    color: var(--text-2);
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  input[type="text"], input[type="number"] {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 16px;
+    background: white;
+    color: var(--text);
+    -webkit-appearance: none; appearance: none;
+  }
+  input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(6,199,85,0.15);
+  }
+  .row { display: flex; gap: 8px; align-items: stretch; }
+  .row > * { flex: 1; }
+  .row .auto { flex: 0 0 auto; }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    border: none;
+    background: var(--primary);
+    color: white;
+    font-size: 15px; font-weight: 700;
+    padding: 11px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: transform 0.05s, background 0.15s;
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    gap: 6px;
+  }
+  .btn:active { transform: scale(0.97); background: var(--primary-dark); }
+  .btn:disabled { background: var(--muted); cursor: not-allowed; opacity: 0.7; }
+  .btn.secondary { background: var(--primary-light); color: var(--primary-darker); }
+  .btn.ghost { background: white; color: var(--text-2); border: 1.5px solid var(--border); }
+  .btn.danger { background: transparent; color: var(--danger); padding: 6px 8px; }
+  .btn.block { width: 100%; }
+  .btn.lg { padding: 14px 20px; font-size: 16px; }
+  .btn.sm { padding: 8px 12px; font-size: 13px; }
+  .btn.line::before {
+    content: "LINE";
+    background: white;
+    color: var(--primary);
+    font-size: 10px; font-weight: 800;
+    padding: 2px 5px;
+    border-radius: 4px;
+    margin-right: 6px;
+    letter-spacing: 0.5px;
+  }
+
+  /* ---------- People (chips) ---------- */
+  .person-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--primary-light);
+    color: var(--primary-darker);
+    padding: 5px 8px 5px 5px;
+    border-radius: 999px;
+    font-size: 14px;
+    margin: 0 6px 6px 0;
+    font-weight: 600;
+  }
+  .person-chip.you { background: var(--primary); color: white; }
+  .person-chip .mini-avatar {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    color: white;
+    font-weight: 700;
+    font-size: 11px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .person-chip .mini-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .person-chip button {
+    background: transparent;
+    color: inherit;
+    border: none;
+    padding: 0;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    font-size: 14px;
+    cursor: pointer;
+    margin-left: 2px;
+    opacity: 0.7;
+  }
+
+  /* ---------- Items ---------- */
+  .item-row {
+    border: 1.5px solid var(--border-soft);
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background: #fafbfc;
+  }
+  .item-row .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .item-row input.name {
+    border: none;
+    background: transparent;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 0;
+    flex: 1;
+  }
+  .item-row input.price {
+    border: none;
+    background: transparent;
+    text-align: right;
+    width: 80px;
+    font-weight: 700;
+    color: var(--primary-darker);
+    padding: 0;
+    font-size: 16px;
+  }
+  .item-row .name:focus, .item-row .price:focus {
+    outline: none;
+    border-bottom: 1.5px dashed var(--primary);
+  }
+  .assign-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .assign-pill {
+    border: 1.5px solid var(--border);
+    background: white;
+    color: var(--text-2);
+    padding: 5px 12px 5px 5px;
+    border-radius: 999px;
+    font-size: 13px;
+    cursor: pointer;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .assign-pill .mini-avatar {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    color: white;
+    font-weight: 700;
+    font-size: 11px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .assign-pill .mini-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .assign-pill.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+  }
+  .assign-pill.active .mini-avatar { background: rgba(255,255,255,0.25) !important; }
+  .share-info {
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* ---------- Totals & summary ---------- */
+  .totals-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    font-size: 14px;
+    color: var(--text-2);
+  }
+  .totals-row.grand {
+    border-top: 2px solid var(--border-soft);
+    margin-top: 6px;
+    padding-top: 10px;
+    font-weight: 800;
+    font-size: 17px;
+    color: var(--text);
+  }
+  .totals-row.grand span:last-child { color: var(--primary-darker); }
+
+  .person-summary {
+    border: 1.5px solid var(--border-soft);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 8px;
+    background: white;
+  }
+  .person-summary .head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .person-summary .head .avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 12px;
+    overflow: hidden;
+  }
+  .person-summary .head .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .person-summary .head .name {
+    font-weight: 700;
+    font-size: 15px;
+    flex: 1;
+  }
+  .person-summary .head .total {
+    font-weight: 800;
+    color: var(--primary-darker);
+    font-variant-numeric: tabular-nums;
+    font-size: 16px;
+  }
+  .person-summary .line {
+    display: flex; justify-content: space-between;
+    padding: 2px 0;
+    font-size: 13px;
+    color: var(--text-2);
+  }
+  .person-summary .line.shared { color: var(--primary); font-style: italic; }
+  .person-summary .line.tt {
+    border-top: 1px dashed var(--border-soft);
+    margin-top: 4px;
+    padding-top: 5px;
+  }
+  .person-summary .total-line {
+    border-top: 1px dashed var(--border);
+    margin-top: 6px;
+    padding-top: 6px;
+    font-weight: 700;
+    color: var(--text);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .empty {
+    color: var(--muted);
+    font-size: 13px;
+    text-align: center;
+    padding: 14px 6px;
+    font-style: italic;
+  }
+
+  /* ---------- Upload choices ---------- */
+  .upload-choices {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 4px;
+  }
+  .choice-btn {
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 10px;
+    cursor: pointer;
+    text-align: center;
+    transition: transform 0.05s, border-color 0.15s, background 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .choice-btn:active { transform: scale(0.97); border-color: var(--primary); background: var(--primary-light); }
+  .choice-btn .icon-wrap {
+    width: 46px; height: 46px;
+    border-radius: 14px;
+    margin: 0 auto 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    color: white;
+  }
+  .choice-btn .icon-wrap.camera { background: var(--primary); }
+  .choice-btn .icon-wrap.library { background: linear-gradient(135deg, #3B82F6, #6366F1); }
+  .choice-btn .ch-title { font-weight: 700; font-size: 14px; color: var(--text); }
+  .choice-btn .ch-hint { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* ---------- Upload + OCR ---------- */
+  .upload {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    text-align: center;
+    cursor: pointer;
+    background: var(--bg);
+    margin-top: 8px;
+  }
+  .upload:hover, .upload.drag {
+    border-color: var(--primary);
+    background: var(--primary-light);
+  }
+  .upload .icon {
+    width: 48px; height: 48px;
+    margin: 0 auto 8px;
+    border-radius: 14px;
+    background: var(--primary);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+  .upload .title { font-weight: 700; font-size: 15px; }
+  .upload .hint { color: var(--muted); font-size: 12px; margin-top: 4px; }
+
+  .progress {
+    background: var(--border-soft);
+    height: 6px;
+    border-radius: 3px;
+    margin: 10px 0 4px;
+    overflow: hidden;
+  }
+  .progress > div {
+    height: 100%;
+    background: var(--primary);
+    transition: width 0.2s;
+    width: 0%;
+  }
+
+  .preview-img {
+    max-width: 100%;
+    width: 100%;
+    border-radius: 12px;
+    margin-top: 8px;
+    border: 1px solid var(--border-soft);
+    max-height: 240px;
+    object-fit: contain;
+    background: #000;
+  }
+
+  .detected-summary {
+    margin-top: 10px;
+    background: var(--primary-light);
+    border-radius: 12px;
+    padding: 10px 12px;
+  }
+  .detected-summary .head {
+    font-weight: 700;
+    color: var(--primary-darker);
+    font-size: 12px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    letter-spacing: 0.4px;
+  }
+  .detected-summary .row-line {
+    display: flex; justify-content: space-between;
+    padding: 3px 0;
+    font-size: 13px;
+    color: var(--text-2);
+  }
+  .detected-summary .row-line.found { color: var(--text); font-weight: 600; }
+  .detected-summary .check { color: var(--success); margin-left: 4px; font-size: 12px; }
+
+  .ocr-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    margin-bottom: 6px;
+    background: white;
+  }
+  .ocr-item input.name { flex: 1; border: none; background: transparent; padding: 4px; font-weight: 600; font-size: 14px; }
+  .ocr-item input.price { width: 64px; text-align: right; border: none; background: transparent; padding: 4px; font-weight: 700; color: var(--primary-darker); }
+  .ocr-item button { padding: 6px 10px; font-size: 12px; }
+
+  .toggle-mode {
+    display: flex;
+    background: var(--bg);
+    border-radius: 999px;
+    padding: 3px;
+    margin-bottom: 10px;
+  }
+  .toggle-mode button {
+    flex: 1;
+    background: transparent;
+    color: var(--muted);
+    font-size: 13px;
+    padding: 8px;
+    border-radius: 999px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+  }
+  .toggle-mode button.active {
+    background: white;
+    color: var(--primary-darker);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+
+  .row-tax {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: calc(var(--safe-bottom) + 80px);
+    left: 50%;
+    transform: translate(-50%, 20px);
+    background: #1F2937;
+    color: white;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 200;
+    pointer-events: none;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  .footer-cta {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: linear-gradient(180deg, transparent, var(--bg) 30%);
+    padding: 24px 14px calc(var(--safe-bottom) + 14px);
+    text-align: center;
+    pointer-events: none;
+    z-index: 50;
+  }
+  .footer-cta .inner {
+    max-width: 512px;
+    margin: 0 auto;
+    pointer-events: all;
+  }
+  .footer-cta .btn {
+    width: 100%;
+    box-shadow: 0 6px 18px rgba(6,199,85,0.4);
+  }
+
+  .warn-banner {
+    background: #FEF3C7;
+    color: #92400E;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+
+  .hint {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  details.raw { margin-top: 8px; }
+  details.raw summary { font-size: 12px; color: var(--muted); cursor: pointer; }
+  details.raw pre {
+    font-size: 11px; background: var(--bg); padding: 10px; border-radius: 10px;
+    white-space: pre-wrap; max-height: 180px; overflow: auto;
+  }
+
+  /* Setup overlay */
+  .setup-overlay {
+    position: fixed;
+    inset: 0;
+    background: white;
+    z-index: 1000;
+    padding: 18px;
+    overflow-y: auto;
+    display: none;
+  }
+  .setup-overlay.show { display: block; }
+  .setup-overlay h2 { color: var(--primary-darker); margin-top: 8px; }
+  .setup-overlay code {
+    background: var(--bg); padding: 2px 6px;
+    border-radius: 4px; font-size: 13px;
+    word-break: break-all;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="top-row">
+      <h1><span class="logo">¥</span> Splitly</h1>
+      <span class="liff-status" id="liffStatus">Web mode</span>
+      <span class="user-badge" id="userBadge" style="display:none;">
+        <span class="pic" id="userPic">?</span>
+        <span id="userName">You</span>
+      </span>
+    </div>
+    <div class="subtitle">Split the bill fairly — by what each person ordered.</div>
+  </header>
+
+  <div class="liff-welcome" id="liffWelcome">
+    💚 Logged in via LINE — you've been added as the first diner.
+  </div>
+
+  <!-- Step 1: People -->
+  <section class="card">
+    <h2><span class="step">1</span> Who's eating?</h2>
+    <div class="row">
+      <input type="text" id="personName" placeholder="Add a person's name" autocomplete="off" />
+      <button class="btn auto" onclick="addPerson()">Add</button>
+    </div>
+    <div id="peopleList" style="margin-top:10px;"></div>
+  </section>
+
+  <!-- Step 2: Items -->
+  <section class="card">
+    <h2><span class="step">2</span> Add items</h2>
+    <div class="toggle-mode">
+      <button id="modeManual" class="active" onclick="setMode('manual')">✍️ Manual</button>
+      <button id="modePhoto" onclick="setMode('photo')">📷 Scan receipt</button>
+    </div>
+
+    <div id="manualPanel">
+      <div class="row">
+        <input type="text" id="itemName" placeholder="Item name" autocomplete="off" />
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <input type="number" id="itemPrice" placeholder="0.00" step="0.01" min="0" inputmode="decimal" />
+        <button class="btn auto" onclick="addItem()">Add</button>
+      </div>
+    </div>
+
+    <div id="photoPanel" style="display:none;">
+      <div class="upload-choices">
+        <button type="button" class="choice-btn" onclick="document.getElementById('cameraInput').click()">
+          <div class="icon-wrap camera">📷</div>
+          <div class="ch-title">Take photo</div>
+          <div class="ch-hint">Use camera</div>
+        </button>
+        <button type="button" class="choice-btn" onclick="document.getElementById('libraryInput').click()">
+          <div class="icon-wrap library">🖼️</div>
+          <div class="ch-title">From library</div>
+          <div class="ch-hint">Choose photo</div>
+        </button>
+      </div>
+      <!-- Camera (forces camera on mobile) -->
+      <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleFile(this.files[0])" />
+      <!-- Library / file picker (no capture so it opens photo library/files) -->
+      <input type="file" id="libraryInput" accept="image/*" style="display:none" onchange="handleFile(this.files[0])" />
+      <!-- Drop zone for desktop drag-and-drop -->
+      <div class="upload" id="uploadArea" onclick="document.getElementById('libraryInput').click()" style="margin-top:10px;">
+        <div class="icon">📸</div>
+        <div class="title">Or drop a receipt image</div>
+        <div class="hint">Auto-detects items, tax & tip · JPG / PNG / HEIC</div>
+      </div>
+      <img id="previewImg" class="preview-img" style="display:none" />
+      <div id="ocrProgress" style="display:none;">
+        <div class="progress"><div id="ocrBar"></div></div>
+        <div class="hint" id="ocrStatus">Starting…</div>
+      </div>
+      <div id="ocrResult"></div>
+    </div>
+  </section>
+
+  <!-- Step 3: Assignment -->
+  <section class="card" id="itemsCard" style="display:none;">
+    <h2><span class="step">3</span> Who had what?</h2>
+    <p class="hint" style="margin:-4px 0 10px;">Tap names to assign. Multi-tap to share.</p>
+    <div id="itemsList"></div>
+  </section>
+
+  <!-- Step 4: Tax & tip -->
+  <section class="card">
+    <h2><span class="step">4</span> Tax & tip</h2>
+    <div class="row-tax">
+      <div>
+        <label for="taxAmount">Tax</label>
+        <input type="number" id="taxAmount" placeholder="0.00" step="0.01" min="0" inputmode="decimal" oninput="render()" />
+      </div>
+      <div>
+        <label for="tipAmount">Tip</label>
+        <input type="number" id="tipAmount" placeholder="0.00" step="0.01" min="0" inputmode="decimal" oninput="render()" />
+      </div>
+    </div>
+    <div class="hint" style="margin-top:6px;">Auto-filled from receipt scan when possible. Split proportionally to subtotal.</div>
+  </section>
+
+  <!-- Step 5: Summary -->
+  <section class="card">
+    <h2><span class="step">5</span> Summary</h2>
+    <div id="summary"></div>
+    <div id="totals" style="margin-top:10px;"></div>
+    <div class="row" style="margin-top:12px;">
+      <button class="btn ghost" onclick="copyResults()">📋 Copy</button>
+      <button class="btn ghost" onclick="resetAll()">🗑 Reset</button>
+    </div>
+    <button class="btn ghost block" onclick="showSetup()" style="margin-top:8px;font-size:12px;padding:8px;">
+      ⚙️ LINE setup guide
+    </button>
+  </section>
+</div>
+
+<!-- Sticky CTA: Send to LINE -->
+<div class="footer-cta">
+  <div class="inner">
+    <button class="btn line lg block" onclick="sendToLINE()">💬 Send to LINE chat</button>
+  </div>
+</div>
+
+<!-- Setup overlay -->
+<div class="setup-overlay" id="setupOverlay">
+  <button class="btn ghost sm" onclick="hideSetup()" style="margin-bottom:14px;">← Back</button>
+  <h2>Deploy to LINE (LIFF)</h2>
+  <p>To run inside LINE — with auto-login and "Send to LINE chat" — you need a public HTTPS URL and a free LINE Developers account.</p>
+  <h3>1. Host the file</h3>
+  <p>Drag <code>receipt-splitter.html</code> onto <a href="https://app.netlify.com/drop" target="_blank">Netlify Drop</a>. Free, no signup, get an HTTPS URL in seconds.</p>
+  <h3>2. Create a LIFF app</h3>
+  <p>Go to <a href="https://developers.line.biz/console/" target="_blank">LINE Developers Console</a> → create a Provider → create a <strong>LINE Login</strong> channel → LIFF tab → Add new.</p>
+  <ul>
+    <li><strong>Endpoint URL:</strong> Netlify URL from step 1</li>
+    <li><strong>Size:</strong> Full</li>
+    <li><strong>Scopes:</strong> profile, openid, chat_message.write</li>
+  </ul>
+  <h3>3. Save your LIFF ID</h3>
+  <p>Paste your LIFF ID (e.g. <code>2001234567-AbCdEfGh</code>):</p>
+  <input type="text" id="liffIdInput" placeholder="Your LIFF ID" />
+  <button class="btn block" onclick="saveLiffId()" style="margin-top:8px;">Save & reload</button>
+  <h3>4. Open in LINE</h3>
+  <p>Share <code>https://liff.line.me/YOUR-LIFF-ID</code> in any LINE chat → tap to launch the app inside LINE.</p>
+  <h3>Without a LIFF ID</h3>
+  <p>Works as a regular web app too — only "Send to LINE chat" falls back to copy-to-clipboard.</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const PALETTE = [
+    ['#06C755','#00B900'], ['#3B82F6','#1D4ED8'], ['#F59E0B','#D97706'],
+    ['#EF4444','#DC2626'], ['#8B5CF6','#7C3AED'], ['#EC4899','#DB2777'],
+    ['#06B6D4','#0891B2'], ['#84CC16','#65A30D'], ['#F97316','#EA580C'],
+    ['#14B8A6','#0D9488'],
+  ];
+  const state = {
+    people: [],
+    items: [],
+    mode: 'manual',
+    currency: '$',
+    liffReady: false,
+    lineUser: null,
+  };
+  let nextId = 1;
+  const uid = () => 'id_' + (nextId++);
+
+  function fmt(n) { return state.currency + (Number(n)||0).toFixed(2); }
+  function initials(name) { return name.trim().split(/\s+/).map(p=>p[0]||'').join('').slice(0,2).toUpperCase(); }
+  function colorFor(p) { const c = PALETTE[(p.colorIdx??0)%PALETTE.length]; return `linear-gradient(135deg, ${c[0]}, ${c[1]})`; }
+  function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  // ---------- LIFF ----------
+  function getLiffId() {
+    const url = new URL(window.location.href);
+    return url.searchParams.get('liffId') || window.LIFF_ID || null;
+  }
+
+  async function initLiff() {
+    const liffId = getLiffId();
+    // Locale-based currency default
+    try {
+      const lang = (navigator.language || 'en-US');
+      if (lang.startsWith('ja')) state.currency = '¥';
+      else if (lang.startsWith('th')) state.currency = '฿';
+      else if (lang.startsWith('zh')) state.currency = '¥';
+      else if (lang.startsWith('ko')) state.currency = '₩';
+    } catch(e) {}
+
+    if (!liffId || typeof liff === 'undefined') {
+      document.getElementById('liffStatus').textContent = 'Web mode';
+      render();
+      return;
+    }
+    try {
+      await liff.init({ liffId });
+      state.liffReady = true;
+      document.getElementById('liffStatus').textContent = 'LINE';
+      if (!liff.isLoggedIn()) { liff.login(); return; }
+      try {
+        const lang = liff.getLanguage();
+        if (lang.startsWith('ja')) state.currency = '¥';
+        else if (lang.startsWith('th')) state.currency = '฿';
+        else if (lang.startsWith('zh')) state.currency = '¥';
+        else if (lang.startsWith('ko')) state.currency = '₩';
+      } catch(e) {}
+      const profile = await liff.getProfile();
+      state.lineUser = { userId: profile.userId, name: profile.displayName, picture: profile.pictureUrl };
+
+      const badge = document.getElementById('userBadge');
+      const pic = document.getElementById('userPic');
+      const name = document.getElementById('userName');
+      badge.style.display = '';
+      name.textContent = state.lineUser.name;
+      if (state.lineUser.picture) pic.innerHTML = `<img src="${state.lineUser.picture}" alt="" />`;
+      else pic.textContent = initials(state.lineUser.name);
+
+      if (state.people.length === 0) {
+        state.people.push({ id: uid(), name: state.lineUser.name, colorIdx: 0, isMe: true, picture: state.lineUser.picture });
+        document.getElementById('liffWelcome').classList.add('show');
+      }
+      render();
+    } catch (err) {
+      console.error('LIFF init failed', err);
+      document.getElementById('liffStatus').textContent = 'Web mode';
+      render();
+    }
+  }
+
+  // ---------- Mode ----------
+  function setMode(m) {
+    state.mode = m;
+    document.getElementById('modeManual').classList.toggle('active', m === 'manual');
+    document.getElementById('modePhoto').classList.toggle('active', m === 'photo');
+    document.getElementById('manualPanel').style.display = m === 'manual' ? '' : 'none';
+    document.getElementById('photoPanel').style.display = m === 'photo' ? '' : 'none';
+  }
+
+  // ---------- People ----------
+  function addPerson() {
+    const input = document.getElementById('personName');
+    const name = input.value.trim();
+    if (!name) return;
+    if (state.people.some(p => p.name.toLowerCase() === name.toLowerCase())) { toast('Already added'); return; }
+    state.people.push({ id: uid(), name, colorIdx: state.people.length });
+    input.value = '';
+    input.focus();
+    render();
+  }
+  function removePerson(id) {
+    state.people = state.people.filter(p => p.id !== id);
+    state.items.forEach(it => { it.assignedTo = it.assignedTo.filter(pid => pid !== id); });
+    render();
+  }
+
+  // ---------- Items ----------
+  function addItem(name, price) {
+    const nameInput = document.getElementById('itemName');
+    const priceInput = document.getElementById('itemPrice');
+    name = name ?? nameInput.value.trim();
+    price = price ?? parseFloat(priceInput.value);
+    if (!name || isNaN(price) || price < 0) { toast('Enter name and price'); return; }
+    state.items.push({ id: uid(), name, price, assignedTo: [] });
+    if (!arguments.length) {
+      nameInput.value = ''; priceInput.value = ''; nameInput.focus();
+    }
+    render();
+  }
+  function removeItem(id) { state.items = state.items.filter(it => it.id !== id); render(); }
+  function updateItemField(id, field, val) {
+    const item = state.items.find(it => it.id === id);
+    if (!item) return;
+    if (field === 'price') item.price = parseFloat(val) || 0;
+    if (field === 'name') item.name = val;
+    render();
+  }
+  function toggleAssign(itemId, personId) {
+    const item = state.items.find(it => it.id === itemId);
+    if (!item) return;
+    const idx = item.assignedTo.indexOf(personId);
+    if (idx >= 0) item.assignedTo.splice(idx, 1);
+    else item.assignedTo.push(personId);
+    render();
+  }
+
+  // ---------- Calc ----------
+  function calcTotals() {
+    const tax = parseFloat(document.getElementById('taxAmount').value) || 0;
+    const tip = parseFloat(document.getElementById('tipAmount').value) || 0;
+    const subtotal = state.items.reduce((s, it) => s + (it.price || 0), 0);
+    const perPerson = {};
+    state.people.forEach(p => perPerson[p.id] = { subtotal: 0, items: [] });
+    let unassignedSubtotal = 0;
+    state.items.forEach(it => {
+      if (it.assignedTo.length === 0) { unassignedSubtotal += it.price; return; }
+      const share = it.price / it.assignedTo.length;
+      it.assignedTo.forEach(pid => {
+        if (!perPerson[pid]) return;
+        perPerson[pid].subtotal += share;
+        perPerson[pid].items.push({ name: it.name, share, shared: it.assignedTo.length > 1, sharedWith: it.assignedTo.length });
+      });
+    });
+    const assignedSubtotal = subtotal - unassignedSubtotal;
+    state.people.forEach(p => {
+      const ps = perPerson[p.id];
+      const ratio = assignedSubtotal > 0 ? ps.subtotal / assignedSubtotal : 0;
+      ps.tax = tax * ratio;
+      ps.tip = tip * ratio;
+      ps.total = ps.subtotal + ps.tax + ps.tip;
+    });
+    return { subtotal, tax, tip, total: subtotal + tax + tip, perPerson, unassignedSubtotal };
+  }
+
+  // ---------- Render ----------
+  function render() {
+    // People
+    const peopleEl = document.getElementById('peopleList');
+    if (state.people.length === 0) {
+      peopleEl.innerHTML = '<div class="empty">No one added yet</div>';
+    } else {
+      peopleEl.innerHTML = state.people.map(p => {
+        const av = p.picture ? `<img src="${p.picture}" alt="" />` : escapeHtml(initials(p.name));
+        return `
+          <span class="person-chip ${p.isMe ? 'you' : ''}">
+            <span class="mini-avatar" style="background:${colorFor(p)}">${av}</span>
+            ${escapeHtml(p.name)}${p.isMe ? ' (you)' : ''}
+            ${!p.isMe ? `<button onclick="removePerson('${p.id}')" aria-label="Remove">×</button>` : ''}
+          </span>`;
+      }).join('');
+    }
+
+    // Items + assignment
+    const itemsCard = document.getElementById('itemsCard');
+    const itemsList = document.getElementById('itemsList');
+    if (state.items.length === 0) {
+      itemsCard.style.display = 'none';
+    } else {
+      itemsCard.style.display = '';
+      itemsList.innerHTML = state.items.map(it => {
+        const pillsHtml = state.people.length === 0
+          ? '<div class="hint">Add people first to assign this item.</div>'
+          : `<div class="assign-grid">${state.people.map(p => {
+              const av = p.picture ? `<img src="${p.picture}" alt="" />` : escapeHtml(initials(p.name));
+              return `<span class="assign-pill ${it.assignedTo.includes(p.id) ? 'active' : ''}" onclick="toggleAssign('${it.id}','${p.id}')">
+                <span class="mini-avatar" style="background:${colorFor(p)}">${av}</span>
+                ${escapeHtml(p.name)}${p.isMe ? ' (you)' : ''}
+              </span>`;
+            }).join('')}</div>`;
+        const sharedInfo = it.assignedTo.length > 1
+          ? `<div class="share-info">Shared by ${it.assignedTo.length} · ${fmt(it.price/it.assignedTo.length)} each</div>`
+          : '';
+        return `
+          <div class="item-row">
+            <div class="top">
+              <input type="text" class="name" value="${escapeHtml(it.name)}" oninput="updateItemField('${it.id}','name',this.value)" />
+              <input type="number" class="price" value="${it.price.toFixed(2)}" step="0.01" min="0" inputmode="decimal" onchange="updateItemField('${it.id}','price',this.value)" />
+              <button class="btn danger" onclick="removeItem('${it.id}')" aria-label="Delete">🗑</button>
+            </div>
+            ${pillsHtml}
+            ${sharedInfo}
+          </div>`;
+      }).join('');
+    }
+
+    // Summary
+    const totals = calcTotals();
+    const sumEl = document.getElementById('summary');
+    const totalsEl = document.getElementById('totals');
+
+    if (state.people.length === 0 || state.items.length === 0) {
+      sumEl.innerHTML = '<div class="empty">Add people and items to see who owes what.</div>';
+    } else {
+      sumEl.innerHTML = state.people.map(p => {
+        const ps = totals.perPerson[p.id];
+        const av = p.picture ? `<img src="${p.picture}" alt="" />` : escapeHtml(initials(p.name));
+        const lines = ps.items.map(i => `
+          <div class="line ${i.shared ? 'shared' : ''}">
+            <span>${escapeHtml(i.name)}${i.shared ? ` (1/${i.sharedWith})` : ''}</span>
+            <span>${fmt(i.share)}</span>
+          </div>`).join('');
+        return `
+          <div class="person-summary">
+            <div class="head">
+              <div class="avatar" style="background:${colorFor(p)}">${av}</div>
+              <div class="name">${escapeHtml(p.name)}${p.isMe ? ' (you)' : ''}</div>
+              <div class="total">${fmt(ps.total)}</div>
+            </div>
+            ${lines || '<div class="line"><em>No items assigned</em></div>'}
+            <div class="line tt"><span>Subtotal</span><span>${fmt(ps.subtotal)}</span></div>
+            ${totals.tax > 0 ? `<div class="line tt"><span>Tax share</span><span>${fmt(ps.tax)}</span></div>` : ''}
+            ${totals.tip > 0 ? `<div class="line tt"><span>Tip share</span><span>${fmt(ps.tip)}</span></div>` : ''}
+            <div class="total-line"><span>Total</span><span>${fmt(ps.total)}</span></div>
+          </div>`;
+      }).join('');
+    }
+
+    let warn = '';
+    if (totals.unassignedSubtotal > 0.001) {
+      warn = `<div class="warn-banner">⚠️ ${fmt(totals.unassignedSubtotal)} of items aren't assigned yet.</div>`;
+    }
+    totalsEl.innerHTML = warn + `
+      <div class="totals-row"><span>Subtotal</span><span>${fmt(totals.subtotal)}</span></div>
+      <div class="totals-row"><span>Tax</span><span>${fmt(totals.tax)}</span></div>
+      <div class="totals-row"><span>Tip</span><span>${fmt(totals.tip)}</span></div>
+      <div class="totals-row grand"><span>Grand total</span><span>${fmt(totals.total)}</span></div>
+    `;
+  }
+
+  // ---------- Share ----------
+  function buildSummaryText() {
+    const t = calcTotals();
+    const lines = ['🧾 Splitly Receipt', '═══════════════', ''];
+    state.people.forEach(p => {
+      const ps = t.perPerson[p.id];
+      lines.push(`👤 ${p.name}${p.isMe ? ' (me)' : ''}: ${fmt(ps.total)}`);
+      ps.items.forEach(i => lines.push(`  • ${i.name}${i.shared ? ` (1/${i.sharedWith})` : ''}: ${fmt(i.share)}`));
+      if (t.tax > 0) lines.push(`  • Tax: ${fmt(ps.tax)}`);
+      if (t.tip > 0) lines.push(`  • Tip: ${fmt(ps.tip)}`);
+      lines.push('');
+    });
+    lines.push(`💰 Grand total: ${fmt(t.total)}`);
+    return lines.join('\n');
+  }
+
+  function buildFlexMessage() {
+    const t = calcTotals();
+    const personRows = state.people.map(p => {
+      const ps = t.perPerson[p.id];
+      return {
+        type: 'box', layout: 'horizontal', margin: 'sm',
+        contents: [
+          { type: 'text', text: p.name + (p.isMe ? ' (me)' : ''), size: 'sm', color: '#333333', flex: 5, weight: 'bold' },
+          { type: 'text', text: fmt(ps.total), size: 'sm', color: '#06C755', align: 'end', flex: 3, weight: 'bold' }
+        ]
+      };
+    });
+    return {
+      type: 'flex',
+      altText: `Splitly: total ${fmt(t.total)}`,
+      contents: {
+        type: 'bubble',
+        header: {
+          type: 'box', layout: 'vertical', backgroundColor: '#06C755', paddingAll: 'lg',
+          contents: [
+            { type: 'text', text: '🧾 Splitly', color: '#FFFFFF', weight: 'bold', size: 'lg' },
+            { type: 'text', text: 'Receipt split', color: '#FFFFFF', size: 'xs', margin: 'xs' },
+            { type: 'text', text: fmt(t.total), color: '#FFFFFF', weight: 'bold', size: 'xxl', margin: 'sm' }
+          ]
+        },
+        body: {
+          type: 'box', layout: 'vertical', spacing: 'sm',
+          contents: [
+            { type: 'text', text: 'Who owes what', size: 'xs', color: '#888888', weight: 'bold' },
+            ...personRows,
+            { type: 'separator', margin: 'md' },
+            { type: 'box', layout: 'horizontal', margin: 'md', contents: [
+              { type: 'text', text: 'Subtotal', size: 'xs', color: '#888888', flex: 5 },
+              { type: 'text', text: fmt(t.subtotal), size: 'xs', color: '#888888', align: 'end', flex: 3 }
+            ]},
+            { type: 'box', layout: 'horizontal', contents: [
+              { type: 'text', text: 'Tax', size: 'xs', color: '#888888', flex: 5 },
+              { type: 'text', text: fmt(t.tax), size: 'xs', color: '#888888', align: 'end', flex: 3 }
+            ]},
+            { type: 'box', layout: 'horizontal', contents: [
+              { type: 'text', text: 'Tip', size: 'xs', color: '#888888', flex: 5 },
+              { type: 'text', text: fmt(t.tip), size: 'xs', color: '#888888', align: 'end', flex: 3 }
+            ]}
+          ]
+        }
+      }
+    };
+  }
+
+  async function sendToLINE() {
+    if (state.people.length === 0) { toast('Nothing to send'); return; }
+    const text = buildSummaryText();
+    if (state.liffReady && typeof liff !== 'undefined') {
+      try {
+        if (liff.isApiAvailable && liff.isApiAvailable('shareTargetPicker')) {
+          await liff.shareTargetPicker([buildFlexMessage()]);
+          toast('Shared to LINE');
+          return;
+        }
+        if (liff.isInClient && liff.isInClient()) {
+          await liff.sendMessages([{ type: 'text', text }]);
+          toast('Sent to LINE chat');
+          liff.closeWindow();
+          return;
+        }
+      } catch (err) {
+        console.error(err); toast('LINE share failed: ' + err.message);
+      }
+    }
+    copyResults();
+  }
+
+  function copyResults() {
+    const text = buildSummaryText();
+    if (navigator.share) {
+      navigator.share({ title: 'Receipt Split', text }).catch(() => {
+        navigator.clipboard.writeText(text).then(() => toast('Copied'));
+      });
+    } else {
+      navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard'));
+    }
+  }
+
+  function resetAll() {
+    if (!confirm('Clear everything?')) return;
+    const me = state.people.find(p => p.isMe);
+    state.people = me ? [me] : [];
+    state.items = [];
+    document.getElementById('taxAmount').value = '';
+    document.getElementById('tipAmount').value = '';
+    document.getElementById('previewImg').style.display = 'none';
+    document.getElementById('ocrResult').innerHTML = '';
+    document.getElementById('ocrProgress').style.display = 'none';
+    render();
+    toast('Reset');
+  }
+
+  // ---------- Setup ----------
+  function showSetup() {
+    document.getElementById('setupOverlay').classList.add('show');
+    const cur = getLiffId();
+    if (cur) document.getElementById('liffIdInput').value = cur;
+  }
+  function hideSetup() { document.getElementById('setupOverlay').classList.remove('show'); }
+  function saveLiffId() {
+    const id = document.getElementById('liffIdInput').value.trim();
+    if (!id) { toast('Enter a LIFF ID'); return; }
+    const url = new URL(window.location.href);
+    url.searchParams.set('liffId', id);
+    window.location.href = url.toString();
+  }
+
+  // ---------- OCR ----------
+  async function handleFile(file) {
+    if (!file) return;
+    if (typeof Tesseract === 'undefined') { toast('OCR not loaded yet'); return; }
+    const url = URL.createObjectURL(file);
+    const img = document.getElementById('previewImg');
+    img.src = url; img.style.display = '';
+
+    const progEl = document.getElementById('ocrProgress');
+    const bar = document.getElementById('ocrBar');
+    const status = document.getElementById('ocrStatus');
+    progEl.style.display = '';
+    bar.style.width = '0%';
+    status.textContent = 'Loading OCR engine…';
+
+    try {
+      const result = await Tesseract.recognize(file, 'eng', {
+        logger: m => {
+          if (m.status) status.textContent = m.status + (m.progress ? ` — ${Math.round(m.progress*100)}%` : '');
+          if (m.progress != null) bar.style.width = (m.progress * 100) + '%';
+        }
+      });
+      const text = result.data.text;
+      const parsed = parseReceipt(text);
+      showOCRResult(text, parsed.items, parsed.summary);
+      applyDetectedTotals(parsed.summary);
+      const bits = [];
+      if (parsed.summary.tax != null) bits.push(`tax ${fmt(parsed.summary.tax)}`);
+      if (parsed.summary.tip != null) bits.push(`tip ${fmt(parsed.summary.tip)}`);
+      status.textContent = `Found ${parsed.items.length} item(s)` +
+        (bits.length ? ` · auto-filled ${bits.join(' & ')}` : '') + '.';
+      bar.style.width = '100%';
+    } catch (err) {
+      status.textContent = 'OCR failed: ' + err.message;
+    }
+  }
+
+  function parseReceipt(text) {
+    const lines = text.split(/\n+/).map(l => l.trim()).filter(Boolean);
+    const items = [];
+    const summary = { subtotal: null, tax: null, tip: null, total: null };
+    const priceRe = /(?:[\$£€¥฿₩]?\s*)(\d{1,5}(?:[.,]\d{2}))\s*$/;
+    const skipKw = /^(sub[\s\-]?total|total|amount|balance|change|cash|visa|mastercard|amex|card|paid|due|thank|receipt|invoice|order|table|server|guest|date|time)/i;
+    const subtotalRe = /\b(sub[\s\-]?total|purchase\s+subtotal)\b/i;
+    const taxRe = /\b(tax|vat|gst|hst|sales\s*tax|nyc?\s*tax|new\s*york\s*tax)\b/i;
+    const tipRe = /\b(tip|gratuity|service\s*charge)\b/i;
+    const totalRe = /\btotal\b/i;
+    for (const line of lines) {
+      const m = line.match(priceRe);
+      if (!m) continue;
+      const price = parseFloat(m[1].replace(',', '.'));
+      if (isNaN(price) || price <= 0 || price > 99999) continue;
+      let label = line.slice(0, m.index).replace(/[\$£€¥฿₩]/g, '').trim();
+      const labelClean = label.replace(/\s+/g, ' ');
+      if (taxRe.test(labelClean)) { summary.tax = (summary.tax || 0) + price; continue; }
+      if (tipRe.test(labelClean)) { summary.tip = price; continue; }
+      if (subtotalRe.test(labelClean)) { summary.subtotal = price; continue; }
+      if (totalRe.test(labelClean)) { summary.total = price; continue; }
+      let name = labelClean.replace(/^\d+\s*[xX]\s*/, '').trim();
+      if (!name || name.length < 2) continue;
+      if (skipKw.test(name)) continue;
+      items.push({ name, price });
+    }
+    return { items, summary };
+  }
+
+  function applyDetectedTotals(summary) {
+    const taxEl = document.getElementById('taxAmount');
+    const tipEl = document.getElementById('tipAmount');
+    if (summary.tax != null && !taxEl.value) taxEl.value = summary.tax.toFixed(2);
+    if (summary.tip != null && !tipEl.value) tipEl.value = summary.tip.toFixed(2);
+    render();
+  }
+
+  function showOCRResult(rawText, items, summary) {
+    const el = document.getElementById('ocrResult');
+    let summaryHtml = '';
+    if (summary && (summary.subtotal != null || summary.tax != null || summary.tip != null || summary.total != null)) {
+      const rows = [];
+      if (summary.subtotal != null) rows.push(`<div class="row-line"><span>Subtotal</span><span>${fmt(summary.subtotal)}</span></div>`);
+      if (summary.tax != null) rows.push(`<div class="row-line found"><span>Tax <span class="check">✓ auto-filled</span></span><span>${fmt(summary.tax)}</span></div>`);
+      if (summary.tip != null) rows.push(`<div class="row-line found"><span>Tip <span class="check">✓ auto-filled</span></span><span>${fmt(summary.tip)}</span></div>`);
+      if (summary.total != null) rows.push(`<div class="row-line"><span>Total</span><span>${fmt(summary.total)}</span></div>`);
+      summaryHtml = `<div class="detected-summary"><div class="head">📋 Receipt summary</div>${rows.join('')}</div>`;
+    }
+    if (items.length === 0) {
+      el.innerHTML = summaryHtml + `<div class="hint" style="margin-top:10px;text-align:center;">No items detected.</div><details class="raw"><summary>Raw OCR</summary><pre>${escapeHtml(rawText)}</pre></details>`;
+      return;
+    }
+    el.innerHTML = summaryHtml + `
+      <div style="margin-top:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <strong style="font-size:13px;">Detected items (${items.length})</strong>
+          <button class="btn sm" onclick="addAllOCRItems()">Add all →</button>
+        </div>
+        <div id="ocrItems"></div>
+      </div>`;
+    const container = document.getElementById('ocrItems');
+    items.forEach((it, idx) => {
+      const row = document.createElement('div');
+      row.className = 'ocr-item';
+      row.innerHTML = `
+        <input type="text" class="name" value="${escapeHtml(it.name)}" data-i="${idx}" data-f="name" />
+        <input type="number" class="price" value="${it.price.toFixed(2)}" step="0.01" min="0" inputmode="decimal" data-i="${idx}" data-f="price" />
+        <button class="btn secondary" data-i="${idx}">Add</button>
+      `;
+      container.appendChild(row);
+    });
+    container.querySelectorAll('input').forEach(inp => {
+      inp.addEventListener('input', e => {
+        const i = +e.target.dataset.i, f = e.target.dataset.f;
+        if (f === 'price') items[i].price = parseFloat(e.target.value) || 0;
+        else items[i][f] = e.target.value;
+      });
+    });
+    container.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const i = +e.target.dataset.i;
+        addItem(items[i].name, items[i].price);
+        toast('Added: ' + items[i].name);
+      });
+    });
+  }
+
+  function addAllOCRItems() {
+    const inputs = document.querySelectorAll('#ocrItems .ocr-item');
+    let count = 0;
+    inputs.forEach(row => {
+      const name = row.querySelector('input.name').value.trim();
+      const price = parseFloat(row.querySelector('input.price').value);
+      if (name && !isNaN(price) && price > 0) { addItem(name, price); count++; }
+    });
+    toast(`Added ${count} item${count===1?'':'s'}`);
+  }
+
+  // ---------- Events ----------
+  document.getElementById('personName').addEventListener('keydown', e => { if (e.key === 'Enter') addPerson(); });
+  document.getElementById('itemName').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('itemPrice').focus(); });
+  document.getElementById('itemPrice').addEventListener('keydown', e => { if (e.key === 'Enter') addItem(); });
+
+  const ua = document.getElementById('uploadArea');
+  ['dragover','dragenter'].forEach(ev => ua.addEventListener(ev, e => { e.preventDefault(); ua.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(ev => ua.addEventListener(ev, e => { e.preventDefault(); ua.classList.remove('drag'); }));
+  ua.addEventListener('drop', e => { const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) handleFile(f); });
+
+  render();
+  initLiff();
+</script>
+</body>
+</html>
