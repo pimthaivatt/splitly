@@ -8,6 +8,8 @@
 <title>Splitly — for LINE</title>
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<!-- HEIC support for iPhone photos -->
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 <style>
   :root {
     --primary: #06C755;
@@ -274,6 +276,13 @@
     padding: 0;
     font-size: 16px;
   }
+  .item-row input.price.needs-price {
+    color: #d14747;
+    background: #fff4f4;
+    border-radius: 6px;
+    padding: 2px 6px;
+    box-shadow: 0 0 0 1px #ffc9c9 inset;
+  }
   .item-row .name:focus, .item-row .price:focus {
     outline: none;
     border-bottom: 1.5px dashed var(--primary);
@@ -431,6 +440,87 @@
   .choice-btn .ch-title { font-weight: 700; font-size: 14px; color: var(--text); }
   .choice-btn .ch-hint { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
+  /* ---------- Photo tips ---------- */
+  .photo-tips {
+    margin-top: 10px;
+    background: #FEFCE8;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  .photo-tips summary {
+    font-weight: 600;
+    color: #854D0E;
+    cursor: pointer;
+    list-style: none;
+  }
+  .photo-tips summary::-webkit-details-marker { display: none; }
+  .photo-tips ul {
+    margin: 8px 0 4px;
+    padding-left: 20px;
+    color: #713F12;
+  }
+  .photo-tips li { margin: 3px 0; line-height: 1.4; }
+
+  /* ---------- Cloud OCR toggle ---------- */
+  .cloud-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: #EFF6FF;
+    border: 1px solid #BFDBFE;
+    border-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 13px;
+    color: #1E3A8A;
+  }
+  .cloud-toggle input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #3B82F6;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .cloud-toggle .ct-text { flex: 1; }
+  .cloud-toggle .ct-title { font-weight: 600; display: block; }
+  .cloud-toggle .ct-hint { font-size: 11px; color: #3B5A9C; display: block; margin-top: 1px; }
+  .api-key-row {
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: #F8FAFC;
+    border-radius: 8px;
+    font-size: 12px;
+  }
+  .api-key-row summary {
+    cursor: pointer;
+    color: var(--muted);
+    list-style: none;
+    font-weight: 500;
+  }
+  .api-key-row summary::-webkit-details-marker { display: none; }
+  .api-key-row input {
+    width: 100%;
+    margin-top: 6px;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: monospace;
+  }
+  .api-key-row .save-key {
+    margin-top: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    background: var(--primary);
+    color: #fff;
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
   /* ---------- Upload + OCR ---------- */
   .upload {
     border: 2px dashed var(--border);
@@ -504,6 +594,37 @@
   }
   .detected-summary .row-line.found { color: var(--text); font-weight: 600; }
   .detected-summary .check { color: var(--success); margin-left: 4px; font-size: 12px; }
+
+  .ocr-warn {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: #FEF2F2;
+    border: 1px solid #FCA5A5;
+    border-radius: 10px;
+    font-size: 13px;
+    color: #991B1B;
+    line-height: 1.45;
+  }
+  .ocr-warn.medium {
+    background: #FFFBEB;
+    border-color: #FCD34D;
+    color: #92400E;
+  }
+  .ocr-warn a { color: inherit; text-decoration: underline; font-weight: 600; }
+
+  .raw-edit {
+    width: 100%;
+    min-height: 140px;
+    font-family: ui-monospace, Menlo, Monaco, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.45;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #FAFAFA;
+    resize: vertical;
+    color: var(--text);
+  }
 
   .ocr-item {
     display: flex; align-items: center; gap: 8px;
@@ -636,7 +757,7 @@
         <span id="userName">You</span>
       </span>
     </div>
-    <div class="subtitle">Split the bill fairly — by what each person ordered.</div>
+    <div class="subtitle">Split the bill fairly — by what each person ordered. <span style="opacity:0.5;font-size:11px;">v2.5</span></div>
   </header>
 
   <div class="liff-welcome" id="liffWelcome">
@@ -684,16 +805,45 @@
           <div class="ch-hint">Choose photo</div>
         </button>
       </div>
-      <!-- Camera (forces camera on mobile) -->
-      <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleFile(this.files[0])" />
-      <!-- Library / file picker (no capture so it opens photo library/files) -->
-      <input type="file" id="libraryInput" accept="image/*" style="display:none" onchange="handleFile(this.files[0])" />
-      <!-- Drop zone for desktop drag-and-drop -->
+      <input type="file" id="cameraInput" accept="image/*,.heic,.heif" capture="environment" style="display:none" onchange="handleFile(this.files[0])" />
+      <input type="file" id="libraryInput" accept="image/*,.heic,.heif" style="display:none" onchange="handleFile(this.files[0])" />
       <div class="upload" id="uploadArea" onclick="document.getElementById('libraryInput').click()" style="margin-top:10px;">
         <div class="icon">📸</div>
         <div class="title">Or drop a receipt image</div>
-        <div class="hint">Auto-detects items, tax & tip · JPG / PNG / HEIC</div>
+        <div class="hint">JPG · PNG · HEIC · auto-detects items, tax & tip</div>
       </div>
+
+      <!-- Cloud OCR toggle -->
+      <label class="cloud-toggle" for="cloudOcrToggle" title="Uses OCR.space cloud API for higher accuracy on angled or real-world photos">
+        <input type="checkbox" id="cloudOcrToggle" checked />
+        <span class="ct-text">
+          <span class="ct-title">☁️ Cloud OCR (recommended)</span>
+          <span class="ct-hint">Much better on angled or real-world photos · falls back to local OCR if offline</span>
+        </span>
+      </label>
+
+      <!-- Optional: user's own OCR.space API key -->
+      <details class="api-key-row">
+        <summary>🔑 Use my own OCR.space API key (optional)</summary>
+        <div class="hint" style="margin-top:6px;">Get a free key at <strong>ocr.space/ocrapi</strong> if the shared demo key gets rate-limited.</div>
+        <input type="text" id="ocrKeyInput" placeholder="Paste your OCR.space API key" />
+        <button type="button" class="save-key" onclick="saveOcrKey()">Save key</button>
+        <button type="button" class="save-key" style="background:#6B7280;margin-left:6px;" onclick="clearOcrKey()">Clear</button>
+        <div id="ocrKeyStatus" class="hint" style="margin-top:4px;"></div>
+      </details>
+
+      <!-- Photo quality tips -->
+      <details class="photo-tips" id="photoTips">
+        <summary>📌 Tips for best detection</summary>
+        <ul>
+          <li><strong>Flat & straight</strong> — lay receipt on a flat surface, shoot from directly above</li>
+          <li><strong>Fill the frame</strong> — get close so the receipt fills most of the photo</li>
+          <li><strong>Good light, no shadows</strong> — even lighting, avoid your shadow</li>
+          <li><strong>Sharp focus</strong> — tap the receipt on screen before snapping</li>
+          <li><strong>No clutter</strong> — remove pens, plates, hands from the shot</li>
+        </ul>
+      </details>
+
       <img id="previewImg" class="preview-img" style="display:none" />
       <div id="ocrProgress" style="display:none;">
         <div class="progress"><div id="ocrBar"></div></div>
@@ -744,7 +894,7 @@
 <!-- Sticky CTA: Send to LINE -->
 <div class="footer-cta">
   <div class="inner">
-    <button class="btn line lg block" onclick="sendToLINE()">💬 Send to Instragram chat</button>
+    <button class="btn line lg block" onclick="sendToLINE()">💬 Send to LINE chat</button>
   </div>
 </div>
 
@@ -987,7 +1137,7 @@
           <div class="item-row">
             <div class="top">
               <input type="text" class="name" value="${escapeHtml(it.name)}" oninput="updateItemField('${it.id}','name',this.value)" />
-              <input type="number" class="price" value="${it.price.toFixed(2)}" step="0.01" min="0" inputmode="decimal" onchange="updateItemField('${it.id}','price',this.value)" />
+              <input type="number" class="price ${it.price === 0 ? 'needs-price' : ''}" value="${it.price.toFixed(2)}" step="0.01" min="0" inputmode="decimal" placeholder="0.00" title="${it.price === 0 ? 'Enter price' : ''}" onchange="updateItemField('${it.id}','price',this.value)" />
               <button class="btn danger" onclick="removeItem('${it.id}')" aria-label="Delete">🗑</button>
             </div>
             ${pillsHtml}
@@ -1169,69 +1319,512 @@
   }
 
   // ---------- OCR ----------
+
+  // Manage user's optional OCR.space API key
+  function saveOcrKey() {
+    const input = document.getElementById('ocrKeyInput');
+    const status = document.getElementById('ocrKeyStatus');
+    const k = (input.value || '').trim();
+    if (!k) {
+      status.textContent = 'Please paste a key first.';
+      status.style.color = '#B91C1C';
+      return;
+    }
+    localStorage.setItem('ocrSpaceKey', k);
+    status.textContent = '✓ Key saved. It will be used for cloud OCR.';
+    status.style.color = '#15803D';
+  }
+  function clearOcrKey() {
+    localStorage.removeItem('ocrSpaceKey');
+    const input = document.getElementById('ocrKeyInput');
+    const status = document.getElementById('ocrKeyStatus');
+    if (input) input.value = '';
+    if (status) {
+      status.textContent = 'Key cleared. Falling back to shared demo key.';
+      status.style.color = '#6B7280';
+    }
+  }
+  // Pre-fill the API key input on load if one is saved
+  window.addEventListener('DOMContentLoaded', () => {
+    const saved = localStorage.getItem('ocrSpaceKey');
+    const input = document.getElementById('ocrKeyInput');
+    if (saved && input) input.value = saved;
+  });
+
+  // Convert HEIC to JPEG blob (iPhones default to HEIC)
+  async function ensureWebFormat(file) {
+    const name = (file.name || '').toLowerCase();
+    const type = (file.type || '').toLowerCase();
+    const isHeic = type.includes('heic') || type.includes('heif') ||
+                   name.endsWith('.heic') || name.endsWith('.heif');
+    if (!isHeic) return file;
+    if (typeof heic2any === 'undefined') {
+      throw new Error('HEIC conversion library not loaded');
+    }
+    const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 });
+    return blob instanceof Blob ? blob : blob[0];
+  }
+
+  // Load file as Image element
+  function loadImage(blob) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      img.onload = () => { resolve(img); };
+      img.onerror = () => reject(new Error('Could not load image'));
+      img.src = url;
+    });
+  }
+
+  // Preprocess image on canvas: resize, grayscale, contrast, threshold
+  function preprocessImage(img, opts = {}) {
+    const maxDim = opts.maxDim || 2000;
+    const minDim = opts.minDim || 1200;
+    const threshold = opts.threshold || false;
+
+    let w = img.naturalWidth, h = img.naturalHeight;
+    const scale = Math.min(maxDim / Math.max(w, h), 1);
+    // Upscale if too small for OCR
+    const upscale = Math.max(minDim / Math.max(w, h), 1);
+    const finalScale = scale < 1 ? scale : upscale;
+    w = Math.round(w * finalScale);
+    h = Math.round(h * finalScale);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+
+    const imageData = ctx.getImageData(0, 0, w, h);
+    const d = imageData.data;
+
+    // Grayscale + contrast stretch (find min/max luminance)
+    let min = 255, max = 0;
+    const lumas = new Uint8Array(w * h);
+    for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+      const lum = Math.round(0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2]);
+      lumas[j] = lum;
+      if (lum < min) min = lum;
+      if (lum > max) max = lum;
+    }
+    // Use 2nd-98th percentile to avoid outliers
+    const hist = new Uint32Array(256);
+    for (let j = 0; j < lumas.length; j++) hist[lumas[j]]++;
+    const total = lumas.length;
+    let cum = 0, p2 = 0, p98 = 255;
+    for (let v = 0; v < 256; v++) { cum += hist[v]; if (cum >= total * 0.02) { p2 = v; break; } }
+    cum = 0;
+    for (let v = 255; v >= 0; v--) { cum += hist[v]; if (cum >= total * 0.02) { p98 = v; break; } }
+    const range = Math.max(1, p98 - p2);
+
+    if (threshold) {
+      // Otsu-like threshold using midpoint of stretched histogram
+      const thresh = (p2 + p98) / 2;
+      for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+        const v = lumas[j] < thresh ? 0 : 255;
+        d[i] = d[i+1] = d[i+2] = v;
+      }
+    } else {
+      for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+        let v = Math.round(((lumas[j] - p2) / range) * 255);
+        v = Math.max(0, Math.min(255, v));
+        d[i] = d[i+1] = d[i+2] = v;
+      }
+    }
+    ctx.putImageData(imageData, 0, 0);
+    return canvas;
+  }
+
+  function canvasToBlob(canvas) {
+    return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+  }
+
+  // Cloud OCR via OCR.space free API (much better on real-world photos).
+  // Users can paste their own free API key (25k req/month) at ocr.space/ocrapi/freekey
+  async function cloudOCR(blob, onProgress) {
+    const key = localStorage.getItem('ocrSpaceKey') || 'K87899142388957'; // shared fallback demo key
+    const form = new FormData();
+    form.append('file', blob, 'receipt.jpg');
+    form.append('apikey', key);
+    form.append('OCREngine', '2');           // best engine for receipts
+    form.append('scale', 'true');
+    form.append('isTable', 'true');
+    form.append('detectOrientation', 'true');
+    onProgress && onProgress(0.1, 'Uploading to cloud OCR…');
+    const res = await fetch('https://api.ocr.space/parse/image', {
+      method: 'POST', body: form
+    });
+    if (!res.ok) throw new Error('Cloud OCR HTTP ' + res.status);
+    onProgress && onProgress(0.9, 'Parsing text…');
+    const data = await res.json();
+    if (data.IsErroredOnProcessing) {
+      const msg = Array.isArray(data.ErrorMessage) ? data.ErrorMessage.join(' ') : (data.ErrorMessage || 'Cloud OCR error');
+      throw new Error(msg);
+    }
+    const text = (data.ParsedResults && data.ParsedResults[0] && data.ParsedResults[0].ParsedText) || '';
+    onProgress && onProgress(1.0, 'Done');
+    return text;
+  }
+
+  async function localOCR(blob, onProgress) {
+    const img = await loadImage(blob);
+    // Pass 1: contrast-stretched grayscale
+    const canvas1 = preprocessImage(img, { maxDim: 2000, minDim: 1500, threshold: false });
+    const b1 = await canvasToBlob(canvas1);
+    document.getElementById('previewImg').src = URL.createObjectURL(b1);
+    onProgress && onProgress(0.1, 'Reading text…');
+    const r1 = await Tesseract.recognize(b1, 'eng', {
+      logger: m => { if (m.status === 'recognizing text') onProgress && onProgress(0.1 + m.progress * 0.55, `Reading text ${Math.round(m.progress*100)}%`); },
+      tessedit_pageseg_mode: 6,
+      preserve_interword_spaces: '1',
+    });
+    let text = r1.data.text;
+    let parsed = parseReceipt(text);
+    // Second pass if first was poor
+    if (parsed.items.length < 2 && parsed.summary.total == null) {
+      onProgress && onProgress(0.65, 'Enhanced pass…');
+      const canvas2 = preprocessImage(img, { maxDim: 2400, minDim: 1800, threshold: true });
+      const b2 = await canvasToBlob(canvas2);
+      const r2 = await Tesseract.recognize(b2, 'eng', {
+        logger: m => { if (m.status === 'recognizing text') onProgress && onProgress(0.65 + m.progress * 0.3, `Enhanced pass ${Math.round(m.progress*100)}%`); },
+        tessedit_pageseg_mode: 4,
+        preserve_interword_spaces: '1',
+      });
+      const p2 = parseReceipt(r2.data.text);
+      if (p2.items.length > parsed.items.length || (p2.summary.total != null && parsed.summary.total == null)) {
+        text = r2.data.text; parsed = p2;
+      }
+    }
+    return text;
+  }
+
   async function handleFile(file) {
     if (!file) return;
-    if (typeof Tesseract === 'undefined') { toast('OCR not loaded yet'); return; }
-    const url = URL.createObjectURL(file);
-    const img = document.getElementById('previewImg');
-    img.src = url; img.style.display = '';
-
     const progEl = document.getElementById('ocrProgress');
     const bar = document.getElementById('ocrBar');
     const status = document.getElementById('ocrStatus');
+    const previewEl = document.getElementById('previewImg');
     progEl.style.display = '';
     bar.style.width = '0%';
-    status.textContent = 'Loading OCR engine…';
+    status.textContent = 'Reading photo…';
+
+    const useCloud = document.getElementById('cloudOcrToggle').checked;
 
     try {
-      const result = await Tesseract.recognize(file, 'eng', {
-        logger: m => {
-          if (m.status) status.textContent = m.status + (m.progress ? ` — ${Math.round(m.progress*100)}%` : '');
-          if (m.progress != null) bar.style.width = (m.progress * 100) + '%';
+      // Convert HEIC if needed
+      let blob = file;
+      const isHeic = (file.type || '').toLowerCase().includes('heic') ||
+                     (file.name || '').toLowerCase().match(/\.heic$|\.heif$/);
+      if (isHeic) {
+        status.textContent = 'Converting HEIC photo…';
+        blob = await ensureWebFormat(file);
+      }
+      previewEl.src = URL.createObjectURL(blob);
+      previewEl.style.display = '';
+
+      // Resize for cloud upload (OCR.space has 1MB limit on free tier)
+      if (useCloud) {
+        const img = await loadImage(blob);
+        const canvas = preprocessImage(img, { maxDim: 1500, minDim: 1000, threshold: false });
+        blob = await canvasToBlob(canvas);
+        previewEl.src = URL.createObjectURL(blob);
+      }
+
+      const onProgress = (frac, msg) => {
+        bar.style.width = Math.round(frac * 100) + '%';
+        if (msg) status.textContent = msg;
+      };
+
+      let text = '';
+      try {
+        if (useCloud) {
+          text = await cloudOCR(blob, onProgress);
+        } else {
+          if (typeof Tesseract === 'undefined') throw new Error('Tesseract not loaded');
+          text = await localOCR(blob, onProgress);
         }
-      });
-      const text = result.data.text;
+      } catch (primaryErr) {
+        console.warn('Primary OCR failed', primaryErr);
+        status.textContent = (useCloud ? 'Cloud' : 'Local') + ' OCR failed — trying the other engine…';
+        if (useCloud) {
+          if (typeof Tesseract !== 'undefined') text = await localOCR(blob, onProgress);
+          else throw primaryErr;
+        } else {
+          text = await cloudOCR(blob, onProgress);
+        }
+      }
+
+      bar.style.width = '100%';
       const parsed = parseReceipt(text);
-      showOCRResult(text, parsed.items, parsed.summary);
+      showOCRResult(text, parsed.items, parsed.summary, parsed.confidence);
       applyDetectedTotals(parsed.summary);
       const bits = [];
       if (parsed.summary.tax != null) bits.push(`tax ${fmt(parsed.summary.tax)}`);
       if (parsed.summary.tip != null) bits.push(`tip ${fmt(parsed.summary.tip)}`);
-      status.textContent = `Found ${parsed.items.length} item(s)` +
-        (bits.length ? ` · auto-filled ${bits.join(' & ')}` : '') + '.';
-      bar.style.width = '100%';
+      if (parsed.items.length === 0 && parsed.summary.total == null) {
+        status.textContent = `Couldn't read this photo well. Try the tips above ↑ or add items manually.`;
+      } else {
+        const confMsg = parsed.confidence === 'low' ? ' · ⚠️ please review' :
+                        parsed.confidence === 'medium' ? ' · double-check values' : '';
+        status.textContent = `Found ${parsed.items.length} item(s)` +
+          (bits.length ? ` · auto-filled ${bits.join(' & ')}` : '') + confMsg + '.';
+      }
     } catch (err) {
-      status.textContent = 'OCR failed: ' + err.message;
+      console.error(err);
+      status.textContent = 'Error: ' + err.message;
     }
   }
 
   function parseReceipt(text) {
-    const lines = text.split(/\n+/).map(l => l.trim()).filter(Boolean);
-    const items = [];
+    // Clean up common OCR artifacts
+    text = text.replace(/[|‘’`]/g, "'").replace(/[“”]/g, '"');
+    // Fix common OCR errors in numbers: "O" -> "0" inside number context
+    text = text.replace(/(\d)[Oo](\d)/g, '$10$2');
+    const rawLines = text.split(/\n+/).map(l => l.trim()).filter(Boolean);
     const summary = { subtotal: null, tax: null, tip: null, total: null };
-    const priceRe = /(?:[\$£€¥฿₩]?\s*)(\d{1,5}(?:[.,]\d{2}))\s*$/;
-    const skipKw = /^(sub[\s\-]?total|total|amount|balance|change|cash|visa|mastercard|amex|card|paid|due|thank|receipt|invoice|order|table|server|guest|date|time)/i;
+
+    // ---- Regexes ----
+    const priceRe = /(?:^|[\s\$£€¥฿₩])(\d{1,4}(?:[.,]\d{2}))\s*$/;
+    const priceAnywhereRe = /(?:[\$£€¥฿₩])\s*(\d{1,4}(?:[.,]\d{2}))/;
+
     const subtotalRe = /\b(sub[\s\-]?total|purchase\s+subtotal)\b/i;
-    const taxRe = /\b(tax|vat|gst|hst|sales\s*tax|nyc?\s*tax|new\s*york\s*tax)\b/i;
-    const tipRe = /\b(tip|gratuity|service\s*charge)\b/i;
-    const totalRe = /\btotal\b/i;
-    for (const line of lines) {
-      const m = line.match(priceRe);
+    const taxRe = /\b(tax|vat|gst|hst|sales\s*tax|nyc?\s*tax|new\s*york\s*tax)\b(?!\s*percent|\s*\%)/i;
+    const tipOnlyRe = /^(tip|gratuity|service\s*charge|\+\s*tip)\b/i; // "Tip" at line start
+    const totalRe = /\b(total|grand\s*total|amount\s*due)\b(?!.*tip)/i;
+
+    // Anything starting with these words means "this is not an item line"
+    const boilerplateRe = /^(check\s*#|table\b|server\b|ordered\b|guest\b|date\b|time\b|receipt\b|invoice\b|thank\b|interested\b|contact\b|suggested\b|tip\s*percent|price\s*before|change\b|cash\b|visa\b|mastercard\b|amex\b|american\s*express|discover\b|debit\b|credit\s*card|paid\b|due\b|balance\b|amount\b|---+|====+|street\b|avenue\b|road\b|address\b|phone\b|tel\b|fax\b|www|http|@|application\b|approval\b|authoriz|transaction\b|payment\s*id|batch\b|auth\s*code|card\s*reader|merchant\b|contactless\b|sale\b|approved\b|customer\s*copy|merchant\s*copy|x{3,}|\*{3,}|f\d{5}|80pos|88pos|a0{6,}|cwkp|acadia\b)/i;
+    // Also reject lines whose content obviously contains card / auth jargon (not just at start)
+    const insideBoilerRe = /\b(application\s*label|application\s*id|approval\s*code|card\s*reader|transaction\s*type|payment\s*id|authorization)\b/i;
+
+    // Percentage tip line: "20%: ($18.20 Total $117.27)" or "22% (Tip $20.02 ...)"
+    // Also catch malformed OCR like "%: (Tip 18.20" where the digits got dropped
+    const pctTipLineRe = /^\s*\(?\d{1,3}?\s*%[\s:(]|^\s*%\s*[:(]|\(\s*tip\b/i;
+    // Lines that mark the boundary AFTER items finish — only include markers
+    // that reliably appear POST-items, not pre-items. Things like masked card
+    // numbers (XXX5299) and "Mastercard" can appear in the header too, so they
+    // are handled via per-line skipping instead.
+    const itemEndMarkers = /(sub[\s\-]?total|\bgrand\s*total\b|\btotal\s*\$?\s*\d|suggested\s*tip|tip\s*percentage|based\s*on\s*the\s*check|customer\s*copy|merchant\s*copy|thank\s*you\s*(for|!)|application\s*label|approval\s*code)/i;
+
+    // ---- Find where the item section ends ----
+    // Prefer the FIRST occurrence of "Subtotal" since that's the most reliable marker.
+    // If no Subtotal found, fall back to other markers; otherwise consider all lines.
+    let itemEndIdx = rawLines.length;
+    // First look for Subtotal specifically
+    for (let i = 0; i < rawLines.length; i++) {
+      if (subtotalRe.test(rawLines[i])) { itemEndIdx = i; break; }
+    }
+    // If Subtotal wasn't found, use the broader itemEndMarkers
+    if (itemEndIdx === rawLines.length) {
+      for (let i = 0; i < rawLines.length; i++) {
+        if (itemEndMarkers.test(rawLines[i])) { itemEndIdx = i; break; }
+      }
+    }
+
+    // ---- First pass: extract summary values from ANYWHERE in the text ----
+    for (let i = 0; i < rawLines.length; i++) {
+      const line = rawLines[i];
+      // Skip the "Suggested Tip" percentage section entirely for summary extraction
+      if (pctTipLineRe.test(line)) continue;
+
+      let m = line.match(priceRe);
+      if (!m) m = line.match(priceAnywhereRe);
       if (!m) continue;
       const price = parseFloat(m[1].replace(',', '.'));
       if (isNaN(price) || price <= 0 || price > 99999) continue;
-      let label = line.slice(0, m.index).replace(/[\$£€¥฿₩]/g, '').trim();
-      const labelClean = label.replace(/\s+/g, ' ');
-      if (taxRe.test(labelClean)) { summary.tax = (summary.tax || 0) + price; continue; }
-      if (tipRe.test(labelClean)) { summary.tip = price; continue; }
-      if (subtotalRe.test(labelClean)) { summary.subtotal = price; continue; }
-      if (totalRe.test(labelClean)) { summary.total = price; continue; }
-      let name = labelClean.replace(/^\d+\s*[xX]\s*/, '').trim();
-      if (!name || name.length < 2) continue;
-      if (skipKw.test(name)) continue;
-      items.push({ name, price });
+
+      let label = line.slice(0, m.index).replace(/[\$£€¥฿₩]/g, '').trim().replace(/\s+/g, ' ');
+
+      if (subtotalRe.test(label) && summary.subtotal == null) { summary.subtotal = price; }
+      else if (taxRe.test(label) && summary.tax == null) {
+        // Allow "Tax 8.875% 2.89" style — the % is a rate, the price is the amount.
+        // Only skip if the label is ONLY a rate (no separate dollar amount) — but since
+        // we already have a captured price, any taxRe match should count.
+        summary.tax = price;
+      }
+      else if (tipOnlyRe.test(label) && !/suggested|percent/i.test(label) && summary.tip == null) { summary.tip = price; }
+      else if (totalRe.test(label) && !/suggested|percent|tip\s*\$/i.test(label) && summary.total == null) { summary.total = price; }
     }
-    return { items, summary };
+
+    // Fallback: if we didn't find subtotal but found tax + total, derive it
+    if (summary.subtotal == null && summary.tax != null && summary.total != null) {
+      const derived = summary.total - summary.tax - (summary.tip || 0);
+      if (derived > 0) summary.subtotal = +derived.toFixed(2);
+    }
+
+    // Sanity check tip: tip should be less than subtotal (if known).
+    // A common OCR failure is reading "+ Tip: $117.27" where $117.27 is actually the total.
+    if (summary.tip != null && summary.subtotal != null && summary.tip > summary.subtotal * 0.6) {
+      // Tip > 60% of subtotal is implausible — probably misread as the total
+      if (summary.total == null) summary.total = summary.tip;
+      summary.tip = null;
+    }
+
+    // ---- Helper: split a line that merges multiple items into one ----
+    // e.g. "1 Iced Cappuccino 1 Double Capuccino $46.00" → 2 items
+    //      "Americano 1 Potato Latkes 91.00 $8.07"       → 2 items
+    // Strategy: find all "qty + CapitalizedWord" boundaries within the label part.
+    // The last chunk keeps the trailing price; earlier chunks get price = 0 (user edits).
+    function splitMergedLabel(label, trailingPrice) {
+      // Also detect mid-line prices that belong to earlier chunks
+      // Look for pattern: label-text <price> label-text (embedded prices)
+      // Split points: spaces followed by "digit(s) + space + Capital letter"
+      const splitPts = [];
+      const splitRe = /\s(?=\d+\s+[A-Z][a-z])/g;
+      let m;
+      while ((m = splitRe.exec(label)) !== null) {
+        if (m.index > 2) splitPts.push(m.index);
+      }
+      if (splitPts.length === 0) return [{ name: label, price: trailingPrice }];
+
+      const parts = [];
+      let start = 0;
+      for (const pt of splitPts) {
+        parts.push(label.slice(start, pt).trim());
+        start = pt + 1;
+      }
+      parts.push(label.slice(start).trim());
+
+      // Also scan each part for an embedded price (digits.digits, no $)
+      const embeddedPriceRe = /\s(\d{1,3}[.,]\d{2})\s*$/;
+      const result = parts.map((p, idx) => {
+        const em = p.match(embeddedPriceRe);
+        if (em) {
+          const embPrice = parseFloat(em[1].replace(',', '.'));
+          const cleanName = p.slice(0, em.index).trim();
+          return { name: cleanName, price: embPrice };
+        }
+        // Last part gets the trailing price; others get 0 (user will edit)
+        return { name: p, price: idx === parts.length - 1 ? trailingPrice : 0 };
+      });
+      return result;
+    }
+
+    // ---- Detect orphan summary labels (on their own lines, no value) ----
+    // If we see "Subtotal" / "Tax" / "Total" on a line with no price, any nearby
+    // bare-number line is probably that summary value — not an item price.
+    const orphanSummaryPrices = new Set();
+    for (let i = 0; i < rawLines.length; i++) {
+      const line = rawLines[i];
+      const hasPrice = priceRe.test(line) || priceAnywhereRe.test(line);
+      if (hasPrice) continue;
+      if (!(subtotalRe.test(line) || taxRe.test(line) || totalRe.test(line) || tipOnlyRe.test(line))) continue;
+      // Look at the next 2 lines for a bare numeric value
+      for (let j = i + 1; j < Math.min(i + 3, rawLines.length); j++) {
+        const bare = rawLines[j].match(/^\s*\$?\s*(\d{1,4}[.,]\d{2})\s*$/);
+        if (bare) {
+          const p = parseFloat(bare[1].replace(',', '.'));
+          if (!isNaN(p) && p > 0) orphanSummaryPrices.add(+p.toFixed(2));
+          break;
+        }
+      }
+    }
+
+    // ---- Second pass: extract items ONLY from the item section ----
+    const rawItems = [];
+    for (let i = 0; i < itemEndIdx; i++) {
+      const line = rawLines[i];
+
+      // Hard skips
+      if (boilerplateRe.test(line)) continue;
+      if (insideBoilerRe.test(line)) continue;
+      if (pctTipLineRe.test(line)) continue;
+      if (/x{3,}\d|x{4,}/i.test(line)) continue;
+      if (/\d{2}:\d{2}\s*(am|pm)?/i.test(line)) continue; // times
+      if (/^\d{1,2}\/\d{1,2}\/\d{2,4}/.test(line)) continue; // dates
+
+      let m = line.match(priceRe);
+      if (!m) m = line.match(priceAnywhereRe);
+      if (!m) continue;
+      const price = parseFloat(m[1].replace(',', '.'));
+      if (isNaN(price) || price <= 0 || price > 9999) continue;
+
+      let label = line.slice(0, m.index).replace(/[\$£€¥฿₩]/g, '').trim().replace(/\s+/g, ' ');
+
+      // Skip summary lines
+      if (subtotalRe.test(label) || taxRe.test(label) || tipOnlyRe.test(label) || totalRe.test(label)) continue;
+
+      // Split multi-item merged lines BEFORE the strict name sanitisation
+      const pieces = splitMergedLabel(label, price);
+
+      for (const piece of pieces) {
+        // Strip leading qty like "2x", "1 x", "2 ", "(2)"
+        let name = piece.name.replace(/^\(?\s*\d+\s*\)?\s*[xX]?\s*/, '').trim();
+        // Strip trailing qty "1 Iced Cappuccino 1"
+        name = name.replace(/\s+\d+\s*$/, '').trim();
+        // Strip leading punctuation
+        name = name.replace(/^[%:()\s\-_.]+/, '').trim();
+        if (!name || name.length < 3) continue;
+
+        const letters = (name.match(/[a-zA-Z]/g) || []).length;
+        const digits = (name.match(/\d/g) || []).length;
+        if (letters < 3) continue;
+        if (letters / name.length < 0.4) continue;
+        if (digits > letters) continue;
+        if (/\d{3}[\-\s]\d{3,4}/.test(name)) continue;
+
+        // Reject names that contain obvious boilerplate words
+        if (/\b(application|approval|authorization|transaction|payment\s*id|card\s*reader|batch|approved|mastercard|visa|amex|contactless|customer\s*copy|merchant\s*copy|tip\b|gratuity|suggested)\b/i.test(name)) continue;
+        // Reject if contains a % sign (pct tip line that slipped through)
+        if (/%/.test(name)) continue;
+
+        // Reject if the price matches an orphan-summary value
+        if (piece.price > 0 && orphanSummaryPrices.has(+piece.price.toFixed(2))) continue;
+
+        rawItems.push({ name, price: piece.price });
+      }
+    }
+
+    // ---- Filter: drop items whose price matches a known summary figure ----
+    // Keep items with price == 0 (split-item placeholders — user will edit the price)
+    const summaryVals = [summary.subtotal, summary.tax, summary.tip, summary.total].filter(v => v != null);
+    let items = rawItems.filter(it => it.price === 0 || !summaryVals.some(v => Math.abs(it.price - v) < 0.01));
+
+    // ---- Sanity check against subtotal ----
+    if (summary.subtotal != null && items.length) {
+      // ALWAYS drop items priced >= 98% of subtotal — they're almost certainly the
+      // total/auth amount mis-classified as an item. Better to show nothing than wrong values.
+      items = items.filter(it => it.price < summary.subtotal * 0.98);
+
+      // If item sum still wildly exceeds subtotal, keep only cheapest items whose sum ≤ subtotal * 1.1
+      const sum = items.reduce((s, it) => s + it.price, 0);
+      if (sum > summary.subtotal * 1.4 && items.length > 1) {
+        const sorted = [...items].sort((a, b) => a.price - b.price);
+        const kept = [];
+        let running = 0;
+        for (const it of sorted) {
+          // Zero-priced split items always kept (placeholders)
+          if (it.price === 0) { kept.push(it); continue; }
+          if (running + it.price <= summary.subtotal * 1.1) { kept.push(it); running += it.price; }
+        }
+        items = kept;
+      }
+    }
+
+    // ---- De-duplicate ----
+    const seen = new Set();
+    const dedup = [];
+    for (const it of items) {
+      const key = it.name.toLowerCase().replace(/\s+/g, '') + '_' + it.price.toFixed(2);
+      if (!seen.has(key)) { seen.add(key); dedup.push(it); }
+    }
+
+    // ---- Confidence flag ----
+    // If any item has price 0 (split placeholder awaiting user input), confidence is low
+    const hasZeroPriced = dedup.some(it => it.price === 0);
+    let confidence = 'high';
+    if (dedup.length === 0) confidence = 'none';
+    else if (hasZeroPriced) confidence = 'low';
+    else if (summary.subtotal != null) {
+      const sum = dedup.reduce((s, it) => s + it.price, 0);
+      const diff = Math.abs(sum - summary.subtotal);
+      if (diff > summary.subtotal * 0.15) confidence = 'low';
+      else if (diff > summary.subtotal * 0.05) confidence = 'medium';
+    } else if (dedup.length < 2) {
+      confidence = 'low';
+    }
+
+    return { items: dedup, summary, confidence };
   }
 
   function applyDetectedTotals(summary) {
@@ -1242,7 +1835,7 @@
     render();
   }
 
-  function showOCRResult(rawText, items, summary) {
+  function showOCRResult(rawText, items, summary, confidence) {
     const el = document.getElementById('ocrResult');
     let summaryHtml = '';
     if (summary && (summary.subtotal != null || summary.tax != null || summary.tip != null || summary.total != null)) {
@@ -1253,17 +1846,39 @@
       if (summary.total != null) rows.push(`<div class="row-line"><span>Total</span><span>${fmt(summary.total)}</span></div>`);
       summaryHtml = `<div class="detected-summary"><div class="head">📋 Receipt summary</div>${rows.join('')}</div>`;
     }
+
+    // Confidence warning
+    let warningHtml = '';
+    if (confidence === 'low') {
+      const itemSum = items.reduce((s, it) => s + it.price, 0);
+      const expected = summary && summary.subtotal != null ? ` (expected ~${fmt(summary.subtotal)})` : '';
+      warningHtml = `<div class="ocr-warn">⚠️ <strong>Low confidence</strong> — items sum to ${fmt(itemSum)}${expected}. Please review prices below or <a href="#" onclick="clearOCRItems();return false;">clear &amp; enter manually</a>.</div>`;
+    } else if (confidence === 'medium') {
+      warningHtml = `<div class="ocr-warn medium">ℹ️ Some values may need adjusting — double-check before adding.</div>`;
+    }
+
     if (items.length === 0) {
-      el.innerHTML = summaryHtml + `<div class="hint" style="margin-top:10px;text-align:center;">No items detected.</div><details class="raw"><summary>Raw OCR</summary><pre>${escapeHtml(rawText)}</pre></details>`;
+      el.innerHTML = summaryHtml + warningHtml +
+        `<div class="hint" style="margin-top:10px;text-align:center;">No items detected. Add them manually below ↓</div>` +
+        `<details class="raw" ${items.length === 0 ? 'open' : ''}>
+          <summary>✏️ Show / edit raw OCR text</summary>
+          <div class="hint" style="margin:6px 0;">Edit this text and hit <em>Re-parse</em> to re-run detection — useful when OCR was mostly right but missed a line.</div>
+          <textarea id="rawOcrText" class="raw-edit" spellcheck="false">${escapeHtml(rawText)}</textarea>
+          <button class="btn sm" style="margin-top:6px;" onclick="reparseOCR()">↻ Re-parse</button>
+        </details>`;
       return;
     }
-    el.innerHTML = summaryHtml + `
+    el.innerHTML = summaryHtml + warningHtml + `
       <div style="margin-top:12px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;">
           <strong style="font-size:13px;">Detected items (${items.length})</strong>
-          <button class="btn sm" onclick="addAllOCRItems()">Add all →</button>
+          <div style="display:flex;gap:6px;">
+            <button class="btn sm secondary" onclick="clearOCRItems()" style="padding:4px 10px;font-size:12px;">Clear</button>
+            <button class="btn sm" onclick="addAllOCRItems()">Add all →</button>
+          </div>
         </div>
         <div id="ocrItems"></div>
+        <details class="raw" style="margin-top:8px;"><summary>Show raw OCR text</summary><pre>${escapeHtml(rawText)}</pre></details>
       </div>`;
     const container = document.getElementById('ocrItems');
     items.forEach((it, idx) => {
@@ -1290,6 +1905,31 @@
         toast('Added: ' + items[i].name);
       });
     });
+  }
+
+  function reparseOCR() {
+    const ta = document.getElementById('rawOcrText');
+    if (!ta) return;
+    const text = ta.value;
+    const parsed = parseReceipt(text);
+    showOCRResult(text, parsed.items, parsed.summary, parsed.confidence);
+    applyDetectedTotals(parsed.summary);
+    const status = document.getElementById('ocrStatus');
+    if (status) {
+      const bits = [];
+      if (parsed.summary.tax != null) bits.push('tax ' + fmt(parsed.summary.tax));
+      if (parsed.summary.tip != null) bits.push('tip ' + fmt(parsed.summary.tip));
+      status.textContent = 'Re-parsed: found ' + parsed.items.length + ' item(s)' +
+        (bits.length ? ' · ' + bits.join(' & ') : '') + '.';
+    }
+    toast('Re-parsed');
+  }
+
+  function clearOCRItems() {
+    const el = document.getElementById('ocrResult');
+    if (el) el.innerHTML = '';
+    const status = document.getElementById('ocrStatus');
+    if (status) status.textContent = 'Cleared. Add items manually below, or retake the photo.';
   }
 
   function addAllOCRItems() {
