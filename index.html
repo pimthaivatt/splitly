@@ -8,6 +8,8 @@
 <title>Splitly — for LINE</title>
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<!-- HEIC support for iPhone photos -->
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 <style>
   :root {
     --primary: #06C755;
@@ -274,6 +276,124 @@
     padding: 0;
     font-size: 16px;
   }
+  .multi-receipt-bar {
+    margin: -4px 0 10px;
+    padding: 10px;
+    background: var(--bg);
+    border-radius: 10px;
+    border: 1px solid var(--line);
+  }
+  .mode-toggle {
+    display: inline-flex;
+    background: #fff;
+    border-radius: 8px;
+    padding: 3px;
+    border: 1px solid var(--line);
+    gap: 2px;
+  }
+  .mode-toggle button {
+    border: none;
+    background: transparent;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .mode-toggle button.active {
+    background: var(--primary);
+    color: #fff;
+  }
+  .mode-hint {
+    font-size: 11px;
+    color: #666;
+    margin-top: 6px;
+    line-height: 1.4;
+  }
+  .receipt-tabs {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .receipt-tabs::-webkit-scrollbar { height: 3px; }
+  .receipt-tabs::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+  .receipt-tab {
+    flex: 0 0 auto;
+    padding: 7px 12px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #444;
+    cursor: pointer;
+    white-space: nowrap;
+    scroll-snap-align: start;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .receipt-tab.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+  }
+  .receipt-tab .count {
+    background: rgba(0,0,0,0.08);
+    border-radius: 10px;
+    padding: 1px 7px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .receipt-tab.active .count {
+    background: rgba(255,255,255,0.22);
+  }
+  .receipt-tab.add {
+    background: transparent;
+    border-style: dashed;
+    color: var(--primary);
+  }
+  .receipt-toolbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    align-items: center;
+  }
+  .receipt-label-input {
+    flex: 1;
+    padding: 7px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: 13px;
+    background: #fff;
+  }
+  .scope-badge {
+    font-size: 11px;
+    font-weight: 500;
+    color: #888;
+    margin-left: 8px;
+  }
+  .item-row .receipt-tag {
+    font-size: 10px;
+    color: #888;
+    margin-left: 6px;
+    padding: 1px 6px;
+    background: var(--line);
+    border-radius: 4px;
+  }
+  .item-row input.price.needs-price {
+    color: #d14747;
+    background: #fff4f4;
+    border-radius: 6px;
+    padding: 2px 6px;
+    box-shadow: 0 0 0 1px #ffc9c9 inset;
+  }
   .item-row .name:focus, .item-row .price:focus {
     outline: none;
     border-bottom: 1.5px dashed var(--primary);
@@ -431,6 +551,87 @@
   .choice-btn .ch-title { font-weight: 700; font-size: 14px; color: var(--text); }
   .choice-btn .ch-hint { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
+  /* ---------- Photo tips ---------- */
+  .photo-tips {
+    margin-top: 10px;
+    background: #FEFCE8;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  .photo-tips summary {
+    font-weight: 600;
+    color: #854D0E;
+    cursor: pointer;
+    list-style: none;
+  }
+  .photo-tips summary::-webkit-details-marker { display: none; }
+  .photo-tips ul {
+    margin: 8px 0 4px;
+    padding-left: 20px;
+    color: #713F12;
+  }
+  .photo-tips li { margin: 3px 0; line-height: 1.4; }
+
+  /* ---------- Cloud OCR toggle ---------- */
+  .cloud-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: #EFF6FF;
+    border: 1px solid #BFDBFE;
+    border-radius: 10px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 13px;
+    color: #1E3A8A;
+  }
+  .cloud-toggle input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #3B82F6;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .cloud-toggle .ct-text { flex: 1; }
+  .cloud-toggle .ct-title { font-weight: 600; display: block; }
+  .cloud-toggle .ct-hint { font-size: 11px; color: #3B5A9C; display: block; margin-top: 1px; }
+  .api-key-row {
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: #F8FAFC;
+    border-radius: 8px;
+    font-size: 12px;
+  }
+  .api-key-row summary {
+    cursor: pointer;
+    color: var(--muted);
+    list-style: none;
+    font-weight: 500;
+  }
+  .api-key-row summary::-webkit-details-marker { display: none; }
+  .api-key-row input {
+    width: 100%;
+    margin-top: 6px;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: monospace;
+  }
+  .api-key-row .save-key {
+    margin-top: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    background: var(--primary);
+    color: #fff;
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
   /* ---------- Upload + OCR ---------- */
   .upload {
     border: 2px dashed var(--border);
@@ -505,6 +706,37 @@
   .detected-summary .row-line.found { color: var(--text); font-weight: 600; }
   .detected-summary .check { color: var(--success); margin-left: 4px; font-size: 12px; }
 
+  .ocr-warn {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: #FEF2F2;
+    border: 1px solid #FCA5A5;
+    border-radius: 10px;
+    font-size: 13px;
+    color: #991B1B;
+    line-height: 1.45;
+  }
+  .ocr-warn.medium {
+    background: #FFFBEB;
+    border-color: #FCD34D;
+    color: #92400E;
+  }
+  .ocr-warn a { color: inherit; text-decoration: underline; font-weight: 600; }
+
+  .raw-edit {
+    width: 100%;
+    min-height: 140px;
+    font-family: ui-monospace, Menlo, Monaco, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.45;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #FAFAFA;
+    resize: vertical;
+    color: var(--text);
+  }
+
   .ocr-item {
     display: flex; align-items: center; gap: 8px;
     padding: 8px 10px;
@@ -545,6 +777,68 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
+  }
+  .amount-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .amount-grid .amount-field:last-child {
+    grid-column: 1 / -1;
+  }
+  .amount-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 4px;
+  }
+  .amount-input-row {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .amount-input-row input[type="number"] {
+    flex: 1;
+    min-width: 0;
+    padding: 9px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: 15px;
+    background: #fff;
+  }
+  .mode-pills {
+    display: inline-flex;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 2px;
+    flex: 0 0 auto;
+  }
+  .mode-pill {
+    border: none;
+    background: transparent;
+    padding: 4px 10px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #666;
+    cursor: pointer;
+    border-radius: 6px;
+    min-width: 30px;
+  }
+  .mode-pill.active {
+    background: var(--primary);
+    color: #fff;
+  }
+  .amount-preview {
+    font-size: 11px;
+    color: #666;
+    margin-top: 4px;
+    min-height: 14px;
+    font-weight: 500;
+  }
+  .amount-preview.discount-preview {
+    color: #a0522d;
   }
 
   .toast {
@@ -636,7 +930,7 @@
         <span id="userName">You</span>
       </span>
     </div>
-    <div class="subtitle">Split the bill fairly — by what each person ordered.</div>
+    <div class="subtitle">Split the bill fairly — by what each person ordered. <span style="opacity:0.5;font-size:11px;">v2.7</span></div>
   </header>
 
   <div class="liff-welcome" id="liffWelcome">
@@ -684,16 +978,45 @@
           <div class="ch-hint">Choose photo</div>
         </button>
       </div>
-      <!-- Camera (forces camera on mobile) -->
-      <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleFile(this.files[0])" />
-      <!-- Library / file picker (no capture so it opens photo library/files) -->
-      <input type="file" id="libraryInput" accept="image/*" style="display:none" onchange="handleFile(this.files[0])" />
-      <!-- Drop zone for desktop drag-and-drop -->
+      <input type="file" id="cameraInput" accept="image/*,.heic,.heif" capture="environment" style="display:none" onchange="handleFiles(this.files)" />
+      <input type="file" id="libraryInput" accept="image/*,.heic,.heif" multiple style="display:none" onchange="handleFiles(this.files)" />
       <div class="upload" id="uploadArea" onclick="document.getElementById('libraryInput').click()" style="margin-top:10px;">
         <div class="icon">📸</div>
         <div class="title">Or drop a receipt image</div>
-        <div class="hint">Auto-detects items, tax & tip · JPG / PNG / HEIC</div>
+        <div class="hint">JPG · PNG · HEIC · auto-detects items, tax & tip</div>
       </div>
+
+      <!-- Cloud OCR toggle -->
+      <label class="cloud-toggle" for="cloudOcrToggle" title="Uses OCR.space cloud API for higher accuracy on angled or real-world photos">
+        <input type="checkbox" id="cloudOcrToggle" checked />
+        <span class="ct-text">
+          <span class="ct-title">☁️ Cloud OCR (recommended)</span>
+          <span class="ct-hint">Much better on angled or real-world photos · falls back to local OCR if offline</span>
+        </span>
+      </label>
+
+      <!-- Optional: user's own OCR.space API key -->
+      <details class="api-key-row">
+        <summary>🔑 Use my own OCR.space API key (optional)</summary>
+        <div class="hint" style="margin-top:6px;">Get a free key at <strong>ocr.space/ocrapi</strong> if the shared demo key gets rate-limited.</div>
+        <input type="text" id="ocrKeyInput" placeholder="Paste your OCR.space API key" />
+        <button type="button" class="save-key" onclick="saveOcrKey()">Save key</button>
+        <button type="button" class="save-key" style="background:#6B7280;margin-left:6px;" onclick="clearOcrKey()">Clear</button>
+        <div id="ocrKeyStatus" class="hint" style="margin-top:4px;"></div>
+      </details>
+
+      <!-- Photo quality tips -->
+      <details class="photo-tips" id="photoTips">
+        <summary>📌 Tips for best detection</summary>
+        <ul>
+          <li><strong>Flat & straight</strong> — lay receipt on a flat surface, shoot from directly above</li>
+          <li><strong>Fill the frame</strong> — get close so the receipt fills most of the photo</li>
+          <li><strong>Good light, no shadows</strong> — even lighting, avoid your shadow</li>
+          <li><strong>Sharp focus</strong> — tap the receipt on screen before snapping</li>
+          <li><strong>No clutter</strong> — remove pens, plates, hands from the shot</li>
+        </ul>
+      </details>
+
       <img id="previewImg" class="preview-img" style="display:none" />
       <div id="ocrProgress" style="display:none;">
         <div class="progress"><div id="ocrBar"></div></div>
@@ -707,23 +1030,61 @@
   <section class="card" id="itemsCard" style="display:none;">
     <h2><span class="step">3</span> Who had what?</h2>
     <p class="hint" style="margin:-4px 0 10px;">Tap names to assign. Multi-tap to share.</p>
+    <!-- Multi-receipt controls -->
+    <div id="multiReceiptBar" class="multi-receipt-bar" style="display:none;">
+      <div class="mode-toggle" role="tablist">
+        <button type="button" id="modeSeparate" class="active" onclick="setCombineMode('separate')">Separate bills</button>
+        <button type="button" id="modePool" onclick="setCombineMode('pool')">Pool all items</button>
+      </div>
+      <div class="mode-hint" id="modeHint"></div>
+    </div>
+    <div id="receiptTabs" class="receipt-tabs"></div>
+    <div id="receiptToolbar" class="receipt-toolbar" style="display:none;">
+      <input type="text" id="receiptLabelInput" class="receipt-label-input" placeholder="Receipt name" oninput="if(activeReceipt())activeReceipt().label=this.value||'Receipt';renderTabsOnly()" />
+      <button type="button" class="btn ghost" onclick="removeActiveReceipt()" title="Remove this receipt">🗑</button>
+    </div>
     <div id="itemsList"></div>
   </section>
 
-  <!-- Step 4: Tax & tip -->
-  <section class="card">
-    <h2><span class="step">4</span> Tax & tip</h2>
-    <div class="row-tax">
-      <div>
+  <!-- Step 4: Tax, tip & discount -->
+  <section class="card" id="taxTipCard">
+    <h2><span class="step">4</span> Tax, tip & discount <span id="taxTipScope" class="scope-badge"></span></h2>
+    <div class="amount-grid">
+      <div class="amount-field">
         <label for="taxAmount">Tax</label>
-        <input type="number" id="taxAmount" placeholder="0.00" step="0.01" min="0" inputmode="decimal" oninput="render()" />
+        <div class="amount-input-row">
+          <input type="number" id="taxAmount" placeholder="0.00" step="0.01" min="0" inputmode="decimal" oninput="onTaxInput(this.value)" />
+          <div class="mode-pills">
+            <button type="button" id="taxModeAmount" class="mode-pill active" onclick="setTaxMode('amount')">$</button>
+            <button type="button" id="taxModePercent" class="mode-pill" onclick="setTaxMode('percent')">%</button>
+          </div>
+        </div>
+        <div class="amount-preview" id="taxPreview"></div>
       </div>
-      <div>
+      <div class="amount-field">
         <label for="tipAmount">Tip</label>
-        <input type="number" id="tipAmount" placeholder="0.00" step="0.01" min="0" inputmode="decimal" oninput="render()" />
+        <div class="amount-input-row">
+          <input type="number" id="tipAmount" placeholder="0.00" step="0.01" min="0" inputmode="decimal" oninput="onTipInput(this.value)" />
+          <div class="mode-pills">
+            <button type="button" id="tipModeAmount" class="mode-pill active" onclick="setTipMode('amount')">$</button>
+            <button type="button" id="tipModePercent" class="mode-pill" onclick="setTipMode('percent')">%</button>
+          </div>
+        </div>
+        <div class="amount-preview" id="tipPreview"></div>
+      </div>
+      <div class="amount-field">
+        <label for="discountAmount">Discount</label>
+        <div class="amount-input-row">
+          <input type="number" id="discountAmount" placeholder="0.00" step="0.01" min="0" inputmode="decimal" oninput="onDiscountInput(this.value)" />
+          <div class="mode-pills">
+            <button type="button" id="discountModeAmount" class="mode-pill active" onclick="setDiscountMode('amount')">$</button>
+            <button type="button" id="discountModePercent" class="mode-pill" onclick="setDiscountMode('percent')">%</button>
+          </div>
+        </div>
+        <div class="amount-preview" id="discountPreview"></div>
       </div>
     </div>
-    <div class="hint" style="margin-top:6px;">Auto-filled from receipt scan when possible. Split proportionally to subtotal.</div>
+    <div class="hint" style="margin-top:6px;">Toggle <strong>$</strong>/<strong>%</strong> to enter a flat amount or a percentage of the subtotal. Split proportionally to each person's subtotal.</div>
   </section>
 
   <!-- Step 5: Summary -->
@@ -744,7 +1105,7 @@
 <!-- Sticky CTA: Send to LINE -->
 <div class="footer-cta">
   <div class="inner">
-    <button class="btn line lg block" onclick="sendToLINE()">💬 Send to Instragram chat</button>
+    <button class="btn line lg block" onclick="sendToLINE()">💬 Send to LINE chat</button>
   </div>
 </div>
 
@@ -783,7 +1144,13 @@
   ];
   const state = {
     people: [],
-    items: [],
+    // Multiple receipts. Each receipt has its own items, tax, tip.
+    // `combineMode`:
+    //   - 'separate': show one receipt at a time via tabs; summary aggregates across ALL receipts per person.
+    //   - 'pool':     merge every receipt's items into one pile, one tax, one tip.
+    receipts: [],
+    activeReceiptId: null,
+    combineMode: 'separate',
     mode: 'manual',
     currency: '$',
     liffReady: false,
@@ -791,6 +1158,147 @@
   };
   let nextId = 1;
   const uid = () => 'id_' + (nextId++);
+
+  // ---------- Receipt helpers ----------
+  function makeReceipt(label) {
+    const id = uid();
+    return {
+      id,
+      label: label || `Receipt ${state.receipts.length + 1}`,
+      items: [],
+      tax: 0, taxMode: 'amount',
+      tip: 0, tipMode: 'amount',
+      discount: 0, discountMode: 'amount',
+    };
+  }
+  // Back-compat upgrade: existing receipts may not have mode fields
+  function upgradeReceipt(r) {
+    if (r.taxMode == null) r.taxMode = 'amount';
+    if (r.tipMode == null) r.tipMode = 'amount';
+    if (r.discount == null) r.discount = 0;
+    if (r.discountMode == null) r.discountMode = 'amount';
+  }
+  // Convert a raw value + mode + subtotal → effective amount
+  function effectiveAmount(value, mode, subtotal) {
+    const v = +value || 0;
+    if (mode === 'percent') return (subtotal * v) / 100;
+    return v;
+  }
+  function ensureReceipt() {
+    if (state.receipts.length === 0) {
+      const r = makeReceipt('Receipt 1');
+      state.receipts.push(r);
+      state.activeReceiptId = r.id;
+    }
+    state.receipts.forEach(upgradeReceipt);
+    if (!state.receipts.find(r => r.id === state.activeReceiptId)) {
+      state.activeReceiptId = state.receipts[0].id;
+    }
+    return activeReceipt();
+  }
+  function activeReceipt() {
+    return state.receipts.find(r => r.id === state.activeReceiptId) || state.receipts[0] || null;
+  }
+  function allItems() { return state.receipts.flatMap(r => r.items); }
+  function findItemAcross(itemId) {
+    for (const r of state.receipts) {
+      const it = r.items.find(x => x.id === itemId);
+      if (it) return { receipt: r, item: it };
+    }
+    return null;
+  }
+  function setActiveReceipt(id) {
+    state.activeReceiptId = id;
+    syncTaxTipInputs();
+    render();
+  }
+  function addReceipt() {
+    const r = makeReceipt();
+    state.receipts.push(r);
+    state.activeReceiptId = r.id;
+    syncTaxTipInputs();
+    render();
+  }
+  function removeReceipt(id) {
+    if (state.receipts.length <= 1) { toast('Keep at least one receipt'); return; }
+    if (!confirm('Remove this receipt and its items?')) return;
+    state.receipts = state.receipts.filter(r => r.id !== id);
+    ensureReceipt();
+    syncTaxTipInputs();
+    render();
+  }
+  function renameReceipt(id, label) {
+    const r = state.receipts.find(x => x.id === id);
+    if (r) r.label = label || r.label;
+    render();
+  }
+  function removeActiveReceipt() {
+    const r = activeReceipt();
+    if (r) removeReceipt(r.id);
+  }
+  // Lightweight re-render just for the tab labels while user is typing in the label input
+  function renderTabsOnly() {
+    const receiptTabs = document.getElementById('receiptTabs');
+    if (!receiptTabs || state.receipts.length <= 1 || state.combineMode !== 'separate') { render(); return; }
+    receiptTabs.innerHTML = state.receipts.map(r => `
+      <button type="button" class="receipt-tab ${r.id === state.activeReceiptId ? 'active' : ''}" onclick="setActiveReceipt('${r.id}')">
+        ${escapeHtml(r.label)} <span class="count">${r.items.length}</span>
+      </button>
+    `).join('') + `<button type="button" class="receipt-tab add" onclick="addReceipt()">+ Add receipt</button>`;
+  }
+  function setCombineMode(mode) {
+    state.combineMode = mode;
+    syncTaxTipInputs();
+    render();
+  }
+  // Sync the tax/tip/discount inputs + mode pills to reflect the current scope
+  // (active receipt in separate mode, or receipts[0] in pool mode).
+  function syncTaxTipInputs() {
+    const scope = getAmountScope();
+    if (!scope) return;
+    _setFieldUI('tax', scope.tax, scope.taxMode);
+    _setFieldUI('tip', scope.tip, scope.tipMode);
+    _setFieldUI('discount', scope.discount, scope.discountMode);
+  }
+  // Which receipt currently "owns" the tax/tip/discount inputs?
+  // Pool mode: receipts[0]. Separate mode: the active receipt.
+  function getAmountScope() {
+    if (state.receipts.length === 0) return null;
+    if (state.combineMode === 'pool') return state.receipts[0];
+    return activeReceipt();
+  }
+  function _setFieldUI(kind, value, mode) {
+    const inputEl = document.getElementById(kind + 'Amount');
+    if (inputEl) inputEl.value = (+value > 0) ? (+value).toFixed(2) : '';
+    const amtBtn = document.getElementById(kind + 'ModeAmount');
+    const pctBtn = document.getElementById(kind + 'ModePercent');
+    if (amtBtn) amtBtn.classList.toggle('active', mode !== 'percent');
+    if (pctBtn) pctBtn.classList.toggle('active', mode === 'percent');
+  }
+  function _writeField(kind, value, mode) {
+    const scope = getAmountScope();
+    if (!scope) return;
+    if (state.combineMode === 'pool') {
+      // Apply value/mode to receipts[0]; zero out value on others but keep their modes
+      state.receipts.forEach((r, idx) => {
+        if (idx === 0) {
+          if (value !== undefined) r[kind] = value;
+          if (mode !== undefined) r[kind + 'Mode'] = mode;
+        } else {
+          if (value !== undefined) r[kind] = 0;
+        }
+      });
+    } else {
+      if (value !== undefined) scope[kind] = value;
+      if (mode !== undefined) scope[kind + 'Mode'] = mode;
+    }
+  }
+  function onTaxInput(val)      { _writeField('tax',      parseFloat(val) || 0); render(); }
+  function onTipInput(val)      { _writeField('tip',      parseFloat(val) || 0); render(); }
+  function onDiscountInput(val) { _writeField('discount', parseFloat(val) || 0); render(); }
+  function setTaxMode(mode)      { _writeField('tax',      undefined, mode); syncTaxTipInputs(); render(); }
+  function setTipMode(mode)      { _writeField('tip',      undefined, mode); syncTaxTipInputs(); render(); }
+  function setDiscountMode(mode) { _writeField('discount', undefined, mode); syncTaxTipInputs(); render(); }
 
   function fmt(n) { return state.currency + (Number(n)||0).toFixed(2); }
   function initials(name) { return name.trim().split(/\s+/).map(p=>p[0]||'').join('').slice(0,2).toUpperCase(); }
@@ -883,34 +1391,44 @@
   }
   function removePerson(id) {
     state.people = state.people.filter(p => p.id !== id);
-    state.items.forEach(it => { it.assignedTo = it.assignedTo.filter(pid => pid !== id); });
+    state.receipts.forEach(r => {
+      r.items.forEach(it => { it.assignedTo = it.assignedTo.filter(pid => pid !== id); });
+    });
     render();
   }
 
   // ---------- Items ----------
-  function addItem(name, price) {
+  function addItem(name, price, receiptId) {
     const nameInput = document.getElementById('itemName');
     const priceInput = document.getElementById('itemPrice');
     name = name ?? nameInput.value.trim();
     price = price ?? parseFloat(priceInput.value);
     if (!name || isNaN(price) || price < 0) { toast('Enter name and price'); return; }
-    state.items.push({ id: uid(), name, price, assignedTo: [] });
+    ensureReceipt();
+    const target = receiptId
+      ? state.receipts.find(r => r.id === receiptId)
+      : activeReceipt();
+    (target || activeReceipt()).items.push({ id: uid(), name, price, assignedTo: [] });
     if (!arguments.length) {
       nameInput.value = ''; priceInput.value = ''; nameInput.focus();
     }
     render();
   }
-  function removeItem(id) { state.items = state.items.filter(it => it.id !== id); render(); }
+  function removeItem(id) {
+    state.receipts.forEach(r => { r.items = r.items.filter(it => it.id !== id); });
+    render();
+  }
   function updateItemField(id, field, val) {
-    const item = state.items.find(it => it.id === id);
-    if (!item) return;
-    if (field === 'price') item.price = parseFloat(val) || 0;
-    if (field === 'name') item.name = val;
+    const found = findItemAcross(id);
+    if (!found) return;
+    if (field === 'price') found.item.price = parseFloat(val) || 0;
+    if (field === 'name') found.item.name = val;
     render();
   }
   function toggleAssign(itemId, personId) {
-    const item = state.items.find(it => it.id === itemId);
-    if (!item) return;
+    const found = findItemAcross(itemId);
+    if (!found) return;
+    const item = found.item;
     const idx = item.assignedTo.indexOf(personId);
     if (idx >= 0) item.assignedTo.splice(idx, 1);
     else item.assignedTo.push(personId);
@@ -918,35 +1436,82 @@
   }
 
   // ---------- Calc ----------
+  // Each person's totals aggregated across ALL receipts. Within each receipt,
+  // tax/tip/discount split proportionally by that person's assigned subtotal
+  // in that receipt, so people only pay tax/tip/discount for bills they joined.
+  // Percent mode: value is a % of that receipt's subtotal.
   function calcTotals() {
-    const tax = parseFloat(document.getElementById('taxAmount').value) || 0;
-    const tip = parseFloat(document.getElementById('tipAmount').value) || 0;
-    const subtotal = state.items.reduce((s, it) => s + (it.price || 0), 0);
     const perPerson = {};
-    state.people.forEach(p => perPerson[p.id] = { subtotal: 0, items: [] });
-    let unassignedSubtotal = 0;
-    state.items.forEach(it => {
-      if (it.assignedTo.length === 0) { unassignedSubtotal += it.price; return; }
-      const share = it.price / it.assignedTo.length;
-      it.assignedTo.forEach(pid => {
-        if (!perPerson[pid]) return;
-        perPerson[pid].subtotal += share;
-        perPerson[pid].items.push({ name: it.name, share, shared: it.assignedTo.length > 1, sharedWith: it.assignedTo.length });
+    state.people.forEach(p => perPerson[p.id] = { subtotal: 0, items: [], tax: 0, tip: 0, discount: 0 });
+    let subtotal = 0, tax = 0, tip = 0, discount = 0, unassignedSubtotal = 0;
+    const perReceipt = [];
+
+    state.receipts.forEach(r => {
+      upgradeReceipt(r);
+      const rSubtotal = r.items.reduce((s, it) => s + (+it.price || 0), 0);
+      const rTax = effectiveAmount(r.tax, r.taxMode, rSubtotal);
+      const rTip = effectiveAmount(r.tip, r.tipMode, rSubtotal);
+      const rDiscount = effectiveAmount(r.discount, r.discountMode, rSubtotal);
+      const rPerPerson = {};
+      state.people.forEach(p => rPerPerson[p.id] = { subtotal: 0, items: [] });
+      let rUnassigned = 0;
+
+      r.items.forEach(it => {
+        if (!it.assignedTo || it.assignedTo.length === 0) { rUnassigned += (+it.price || 0); return; }
+        const share = (+it.price || 0) / it.assignedTo.length;
+        it.assignedTo.forEach(pid => {
+          if (!rPerPerson[pid]) return;
+          rPerPerson[pid].subtotal += share;
+          rPerPerson[pid].items.push({ name: it.name, share, shared: it.assignedTo.length > 1, sharedWith: it.assignedTo.length, receiptLabel: r.label });
+          if (!perPerson[pid]) return;
+          perPerson[pid].subtotal += share;
+          perPerson[pid].items.push({ name: it.name, share, shared: it.assignedTo.length > 1, sharedWith: it.assignedTo.length, receiptLabel: r.label });
+        });
       });
+
+      const rAssigned = rSubtotal - rUnassigned;
+      state.people.forEach(p => {
+        const ps = rPerPerson[p.id];
+        const ratio = rAssigned > 0 ? ps.subtotal / rAssigned : 0;
+        const pTax = rTax * ratio, pTip = rTip * ratio, pDiscount = rDiscount * ratio;
+        ps.tax = pTax; ps.tip = pTip; ps.discount = pDiscount;
+        ps.total = ps.subtotal + pTax + pTip - pDiscount;
+        if (perPerson[p.id]) {
+          perPerson[p.id].tax += pTax;
+          perPerson[p.id].tip += pTip;
+          perPerson[p.id].discount += pDiscount;
+        }
+      });
+
+      perReceipt.push({
+        id: r.id, label: r.label,
+        subtotal: rSubtotal, tax: rTax, tip: rTip, discount: rDiscount,
+        total: rSubtotal + rTax + rTip - rDiscount,
+        unassignedSubtotal: rUnassigned, perPerson: rPerPerson,
+        rawTax: +r.tax || 0, taxMode: r.taxMode,
+        rawTip: +r.tip || 0, tipMode: r.tipMode,
+        rawDiscount: +r.discount || 0, discountMode: r.discountMode,
+      });
+
+      subtotal += rSubtotal; tax += rTax; tip += rTip; discount += rDiscount;
+      unassignedSubtotal += rUnassigned;
     });
-    const assignedSubtotal = subtotal - unassignedSubtotal;
+
     state.people.forEach(p => {
       const ps = perPerson[p.id];
-      const ratio = assignedSubtotal > 0 ? ps.subtotal / assignedSubtotal : 0;
-      ps.tax = tax * ratio;
-      ps.tip = tip * ratio;
-      ps.total = ps.subtotal + ps.tax + ps.tip;
+      ps.total = ps.subtotal + ps.tax + ps.tip - ps.discount;
     });
-    return { subtotal, tax, tip, total: subtotal + tax + tip, perPerson, unassignedSubtotal };
+
+    return {
+      subtotal, tax, tip, discount,
+      total: subtotal + tax + tip - discount,
+      perPerson, unassignedSubtotal, perReceipt,
+    };
   }
 
   // ---------- Render ----------
   function render() {
+    ensureReceipt();
     // People
     const peopleEl = document.getElementById('peopleList');
     if (state.people.length === 0) {
@@ -966,50 +1531,116 @@
     // Items + assignment
     const itemsCard = document.getElementById('itemsCard');
     const itemsList = document.getElementById('itemsList');
-    if (state.items.length === 0) {
+    const multiBar = document.getElementById('multiReceiptBar');
+    const receiptTabs = document.getElementById('receiptTabs');
+    const receiptToolbar = document.getElementById('receiptToolbar');
+    const labelInput = document.getElementById('receiptLabelInput');
+    const modeHint = document.getElementById('modeHint');
+    const modeSeparateBtn = document.getElementById('modeSeparate');
+    const modePoolBtn = document.getElementById('modePool');
+    const taxTipScope = document.getElementById('taxTipScope');
+
+    const totalItemCount = allItems().length;
+
+    // Show multi-receipt bar when >1 receipt exists
+    const hasMultiple = state.receipts.length > 1;
+    multiBar.style.display = hasMultiple ? '' : 'none';
+    modeSeparateBtn.classList.toggle('active', state.combineMode === 'separate');
+    modePoolBtn.classList.toggle('active', state.combineMode === 'pool');
+    modeHint.textContent = state.combineMode === 'pool'
+      ? 'All items from every receipt are merged into one bill with shared tax and tip.'
+      : 'Each receipt is its own bill. Switch tabs to edit. Each person\'s total below sums across all receipts.';
+
+    // Tabs (only shown in 'separate' mode when multiple receipts)
+    if (hasMultiple && state.combineMode === 'separate') {
+      receiptTabs.style.display = '';
+      receiptTabs.innerHTML = state.receipts.map(r => `
+        <button type="button" class="receipt-tab ${r.id === state.activeReceiptId ? 'active' : ''}" onclick="setActiveReceipt('${r.id}')">
+          ${escapeHtml(r.label)} <span class="count">${r.items.length}</span>
+        </button>
+      `).join('') + `<button type="button" class="receipt-tab add" onclick="addReceipt()">+ Add receipt</button>`;
+      receiptToolbar.style.display = '';
+      const r = activeReceipt();
+      if (labelInput && r) labelInput.value = r.label;
+    } else if (hasMultiple && state.combineMode === 'pool') {
+      receiptTabs.style.display = 'none';
+      receiptToolbar.style.display = 'none';
+    } else {
+      // Single receipt — hide tabs; still show "+ Add receipt" lightweight control
+      receiptTabs.style.display = '';
+      receiptTabs.innerHTML = `<button type="button" class="receipt-tab add" onclick="addReceipt()">+ Add another receipt</button>`;
+      receiptToolbar.style.display = 'none';
+    }
+
+    // Tax/tip scope badge
+    if (taxTipScope) {
+      if (state.combineMode === 'pool' && hasMultiple) taxTipScope.textContent = '(combined)';
+      else if (hasMultiple) taxTipScope.textContent = `(${activeReceipt()?.label || ''})`;
+      else taxTipScope.textContent = '';
+    }
+
+    // Figure out which items to show
+    let visibleItems = [];
+    if (state.combineMode === 'pool') {
+      visibleItems = state.receipts.flatMap(r => r.items.map(it => ({ ...it, __receiptLabel: r.label, __receiptId: r.id })));
+    } else {
+      const r = activeReceipt();
+      visibleItems = r ? r.items.map(it => ({ ...it, __receiptLabel: r.label, __receiptId: r.id })) : [];
+    }
+
+    if (totalItemCount === 0) {
       itemsCard.style.display = 'none';
     } else {
       itemsCard.style.display = '';
-      itemsList.innerHTML = state.items.map(it => {
-        const pillsHtml = state.people.length === 0
-          ? '<div class="hint">Add people first to assign this item.</div>'
-          : `<div class="assign-grid">${state.people.map(p => {
-              const av = p.picture ? `<img src="${p.picture}" alt="" />` : escapeHtml(initials(p.name));
-              return `<span class="assign-pill ${it.assignedTo.includes(p.id) ? 'active' : ''}" onclick="toggleAssign('${it.id}','${p.id}')">
-                <span class="mini-avatar" style="background:${colorFor(p)}">${av}</span>
-                ${escapeHtml(p.name)}${p.isMe ? ' (you)' : ''}
-              </span>`;
-            }).join('')}</div>`;
-        const sharedInfo = it.assignedTo.length > 1
-          ? `<div class="share-info">Shared by ${it.assignedTo.length} · ${fmt(it.price/it.assignedTo.length)} each</div>`
-          : '';
-        return `
-          <div class="item-row">
-            <div class="top">
-              <input type="text" class="name" value="${escapeHtml(it.name)}" oninput="updateItemField('${it.id}','name',this.value)" />
-              <input type="number" class="price" value="${it.price.toFixed(2)}" step="0.01" min="0" inputmode="decimal" onchange="updateItemField('${it.id}','price',this.value)" />
-              <button class="btn danger" onclick="removeItem('${it.id}')" aria-label="Delete">🗑</button>
-            </div>
-            ${pillsHtml}
-            ${sharedInfo}
-          </div>`;
-      }).join('');
+      if (visibleItems.length === 0) {
+        itemsList.innerHTML = '<div class="empty">No items in this receipt yet.</div>';
+      } else {
+        itemsList.innerHTML = visibleItems.map(it => {
+          const pillsHtml = state.people.length === 0
+            ? '<div class="hint">Add people first to assign this item.</div>'
+            : `<div class="assign-grid">${state.people.map(p => {
+                const av = p.picture ? `<img src="${p.picture}" alt="" />` : escapeHtml(initials(p.name));
+                return `<span class="assign-pill ${it.assignedTo.includes(p.id) ? 'active' : ''}" onclick="toggleAssign('${it.id}','${p.id}')">
+                  <span class="mini-avatar" style="background:${colorFor(p)}">${av}</span>
+                  ${escapeHtml(p.name)}${p.isMe ? ' (you)' : ''}
+                </span>`;
+              }).join('')}</div>`;
+          const sharedInfo = it.assignedTo.length > 1
+            ? `<div class="share-info">Shared by ${it.assignedTo.length} · ${fmt(it.price/it.assignedTo.length)} each</div>`
+            : '';
+          const receiptTag = (state.combineMode === 'pool' && hasMultiple)
+            ? `<span class="receipt-tag">${escapeHtml(it.__receiptLabel)}</span>`
+            : '';
+          return `
+            <div class="item-row">
+              <div class="top">
+                <input type="text" class="name" value="${escapeHtml(it.name)}" oninput="updateItemField('${it.id}','name',this.value)" />
+                ${receiptTag}
+                <input type="number" class="price ${it.price === 0 ? 'needs-price' : ''}" value="${it.price.toFixed(2)}" step="0.01" min="0" inputmode="decimal" placeholder="0.00" title="${it.price === 0 ? 'Enter price' : ''}" onchange="updateItemField('${it.id}','price',this.value)" />
+                <button class="btn danger" onclick="removeItem('${it.id}')" aria-label="Delete">🗑</button>
+              </div>
+              ${pillsHtml}
+              ${sharedInfo}
+            </div>`;
+        }).join('');
+      }
     }
 
-    // Summary
+    // Summary (aggregated across all receipts)
     const totals = calcTotals();
     const sumEl = document.getElementById('summary');
     const totalsEl = document.getElementById('totals');
 
-    if (state.people.length === 0 || state.items.length === 0) {
+    if (state.people.length === 0 || totalItemCount === 0) {
       sumEl.innerHTML = '<div class="empty">Add people and items to see who owes what.</div>';
     } else {
       sumEl.innerHTML = state.people.map(p => {
         const ps = totals.perPerson[p.id];
         const av = p.picture ? `<img src="${p.picture}" alt="" />` : escapeHtml(initials(p.name));
+        const showReceiptTag = hasMultiple;
         const lines = ps.items.map(i => `
           <div class="line ${i.shared ? 'shared' : ''}">
-            <span>${escapeHtml(i.name)}${i.shared ? ` (1/${i.sharedWith})` : ''}</span>
+            <span>${escapeHtml(i.name)}${i.shared ? ` (1/${i.sharedWith})` : ''}${showReceiptTag ? ` <span class="receipt-tag">${escapeHtml(i.receiptLabel)}</span>` : ''}</span>
             <span>${fmt(i.share)}</span>
           </div>`).join('');
         return `
@@ -1021,6 +1652,7 @@
             </div>
             ${lines || '<div class="line"><em>No items assigned</em></div>'}
             <div class="line tt"><span>Subtotal</span><span>${fmt(ps.subtotal)}</span></div>
+            ${totals.discount > 0 ? `<div class="line tt"><span>Discount share</span><span>−${fmt(ps.discount)}</span></div>` : ''}
             ${totals.tax > 0 ? `<div class="line tt"><span>Tax share</span><span>${fmt(ps.tax)}</span></div>` : ''}
             ${totals.tip > 0 ? `<div class="line tt"><span>Tip share</span><span>${fmt(ps.tip)}</span></div>` : ''}
             <div class="total-line"><span>Total</span><span>${fmt(ps.total)}</span></div>
@@ -1032,26 +1664,78 @@
     if (totals.unassignedSubtotal > 0.001) {
       warn = `<div class="warn-banner">⚠️ ${fmt(totals.unassignedSubtotal)} of items aren't assigned yet.</div>`;
     }
-    totalsEl.innerHTML = warn + `
+
+    // Per-receipt breakdown (only when multiple receipts)
+    let perReceiptHtml = '';
+    if (hasMultiple && totals.perReceipt.length > 1) {
+      perReceiptHtml = '<div class="per-receipt-breakdown">' + totals.perReceipt.map(pr => `
+        <div class="totals-row"><span>${escapeHtml(pr.label)}</span><span>${fmt(pr.total)}</span></div>
+      `).join('') + '</div>';
+    }
+
+    totalsEl.innerHTML = warn + perReceiptHtml + `
       <div class="totals-row"><span>Subtotal</span><span>${fmt(totals.subtotal)}</span></div>
+      ${totals.discount > 0 ? `<div class="totals-row"><span>Discount</span><span>−${fmt(totals.discount)}</span></div>` : ''}
       <div class="totals-row"><span>Tax</span><span>${fmt(totals.tax)}</span></div>
       <div class="totals-row"><span>Tip</span><span>${fmt(totals.tip)}</span></div>
       <div class="totals-row grand"><span>Grand total</span><span>${fmt(totals.total)}</span></div>
     `;
+
+    // Update the amount-field previews (show "= $X.XX" for percent mode, or "(X.X%)" for amount mode)
+    updateAmountPreviews(totals);
+  }
+
+  // Update the preview text under each tax/tip/discount input
+  function updateAmountPreviews(totals) {
+    const scope = getAmountScope();
+    if (!scope) return;
+    const isPool = state.combineMode === 'pool' && state.receipts.length > 1;
+    let subtotalBasis;
+    if (isPool) subtotalBasis = (totals ? totals.subtotal : state.receipts.reduce((s, r) => s + r.items.reduce((a, it) => a + (+it.price || 0), 0), 0));
+    else subtotalBasis = scope.items.reduce((s, it) => s + (+it.price || 0), 0);
+
+    ['tax', 'tip', 'discount'].forEach(kind => {
+      const el = document.getElementById(kind + 'Preview');
+      if (!el) return;
+      const raw = +scope[kind] || 0;
+      const mode = scope[kind + 'Mode'] || 'amount';
+      el.className = 'amount-preview' + (kind === 'discount' ? ' discount-preview' : '');
+      if (raw === 0) { el.textContent = ''; return; }
+      if (mode === 'percent') {
+        const amt = (subtotalBasis * raw) / 100;
+        el.textContent = `= ${fmt(amt)} of ${fmt(subtotalBasis)} subtotal`;
+      } else if (subtotalBasis > 0) {
+        const pct = (raw / subtotalBasis) * 100;
+        el.textContent = `≈ ${pct.toFixed(1)}% of subtotal`;
+      } else {
+        el.textContent = '';
+      }
+    });
   }
 
   // ---------- Share ----------
   function buildSummaryText() {
     const t = calcTotals();
-    const lines = ['🧾 Splitly Receipt', '═══════════════', ''];
+    const hasMultiple = state.receipts.length > 1;
+    const header = hasMultiple ? `🧾 Splitly Receipt (${state.receipts.length} bills)` : '🧾 Splitly Receipt';
+    const lines = [header, '═══════════════', ''];
     state.people.forEach(p => {
       const ps = t.perPerson[p.id];
       lines.push(`👤 ${p.name}${p.isMe ? ' (me)' : ''}: ${fmt(ps.total)}`);
-      ps.items.forEach(i => lines.push(`  • ${i.name}${i.shared ? ` (1/${i.sharedWith})` : ''}: ${fmt(i.share)}`));
+      ps.items.forEach(i => {
+        const tag = hasMultiple ? ` [${i.receiptLabel}]` : '';
+        lines.push(`  • ${i.name}${i.shared ? ` (1/${i.sharedWith})` : ''}${tag}: ${fmt(i.share)}`);
+      });
+      if (t.discount > 0) lines.push(`  • Discount: −${fmt(ps.discount)}`);
       if (t.tax > 0) lines.push(`  • Tax: ${fmt(ps.tax)}`);
       if (t.tip > 0) lines.push(`  • Tip: ${fmt(ps.tip)}`);
       lines.push('');
     });
+    if (hasMultiple) {
+      lines.push('── Per-bill totals ──');
+      t.perReceipt.forEach(pr => lines.push(`  ${pr.label}: ${fmt(pr.total)}`));
+      lines.push('');
+    }
     lines.push(`💰 Grand total: ${fmt(t.total)}`);
     return lines.join('\n');
   }
@@ -1091,6 +1775,10 @@
               { type: 'text', text: 'Subtotal', size: 'xs', color: '#888888', flex: 5 },
               { type: 'text', text: fmt(t.subtotal), size: 'xs', color: '#888888', align: 'end', flex: 3 }
             ]},
+            ...(t.discount > 0 ? [{ type: 'box', layout: 'horizontal', contents: [
+              { type: 'text', text: 'Discount', size: 'xs', color: '#A0522D', flex: 5 },
+              { type: 'text', text: '−' + fmt(t.discount), size: 'xs', color: '#A0522D', align: 'end', flex: 3 }
+            ]}] : []),
             { type: 'box', layout: 'horizontal', contents: [
               { type: 'text', text: 'Tax', size: 'xs', color: '#888888', flex: 5 },
               { type: 'text', text: fmt(t.tax), size: 'xs', color: '#888888', align: 'end', flex: 3 }
@@ -1143,9 +1831,11 @@
     if (!confirm('Clear everything?')) return;
     const me = state.people.find(p => p.isMe);
     state.people = me ? [me] : [];
-    state.items = [];
-    document.getElementById('taxAmount').value = '';
-    document.getElementById('tipAmount').value = '';
+    state.receipts = [];
+    state.activeReceiptId = null;
+    state.combineMode = 'separate';
+    ensureReceipt();
+    syncTaxTipInputs();
     document.getElementById('previewImg').style.display = 'none';
     document.getElementById('ocrResult').innerHTML = '';
     document.getElementById('ocrProgress').style.display = 'none';
@@ -1169,80 +1859,575 @@
   }
 
   // ---------- OCR ----------
-  async function handleFile(file) {
-    if (!file) return;
-    if (typeof Tesseract === 'undefined') { toast('OCR not loaded yet'); return; }
-    const url = URL.createObjectURL(file);
-    const img = document.getElementById('previewImg');
-    img.src = url; img.style.display = '';
 
+  // Manage user's optional OCR.space API key
+  function saveOcrKey() {
+    const input = document.getElementById('ocrKeyInput');
+    const status = document.getElementById('ocrKeyStatus');
+    const k = (input.value || '').trim();
+    if (!k) {
+      status.textContent = 'Please paste a key first.';
+      status.style.color = '#B91C1C';
+      return;
+    }
+    localStorage.setItem('ocrSpaceKey', k);
+    status.textContent = '✓ Key saved. It will be used for cloud OCR.';
+    status.style.color = '#15803D';
+  }
+  function clearOcrKey() {
+    localStorage.removeItem('ocrSpaceKey');
+    const input = document.getElementById('ocrKeyInput');
+    const status = document.getElementById('ocrKeyStatus');
+    if (input) input.value = '';
+    if (status) {
+      status.textContent = 'Key cleared. Falling back to shared demo key.';
+      status.style.color = '#6B7280';
+    }
+  }
+  // Pre-fill the API key input on load if one is saved
+  window.addEventListener('DOMContentLoaded', () => {
+    const saved = localStorage.getItem('ocrSpaceKey');
+    const input = document.getElementById('ocrKeyInput');
+    if (saved && input) input.value = saved;
+  });
+
+  // Convert HEIC to JPEG blob (iPhones default to HEIC)
+  async function ensureWebFormat(file) {
+    const name = (file.name || '').toLowerCase();
+    const type = (file.type || '').toLowerCase();
+    const isHeic = type.includes('heic') || type.includes('heif') ||
+                   name.endsWith('.heic') || name.endsWith('.heif');
+    if (!isHeic) return file;
+    if (typeof heic2any === 'undefined') {
+      throw new Error('HEIC conversion library not loaded');
+    }
+    const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 });
+    return blob instanceof Blob ? blob : blob[0];
+  }
+
+  // Load file as Image element
+  function loadImage(blob) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      img.onload = () => { resolve(img); };
+      img.onerror = () => reject(new Error('Could not load image'));
+      img.src = url;
+    });
+  }
+
+  // Preprocess image on canvas: resize, grayscale, contrast, threshold
+  function preprocessImage(img, opts = {}) {
+    const maxDim = opts.maxDim || 2000;
+    const minDim = opts.minDim || 1200;
+    const threshold = opts.threshold || false;
+
+    let w = img.naturalWidth, h = img.naturalHeight;
+    const scale = Math.min(maxDim / Math.max(w, h), 1);
+    // Upscale if too small for OCR
+    const upscale = Math.max(minDim / Math.max(w, h), 1);
+    const finalScale = scale < 1 ? scale : upscale;
+    w = Math.round(w * finalScale);
+    h = Math.round(h * finalScale);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+
+    const imageData = ctx.getImageData(0, 0, w, h);
+    const d = imageData.data;
+
+    // Grayscale + contrast stretch (find min/max luminance)
+    let min = 255, max = 0;
+    const lumas = new Uint8Array(w * h);
+    for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+      const lum = Math.round(0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2]);
+      lumas[j] = lum;
+      if (lum < min) min = lum;
+      if (lum > max) max = lum;
+    }
+    // Use 2nd-98th percentile to avoid outliers
+    const hist = new Uint32Array(256);
+    for (let j = 0; j < lumas.length; j++) hist[lumas[j]]++;
+    const total = lumas.length;
+    let cum = 0, p2 = 0, p98 = 255;
+    for (let v = 0; v < 256; v++) { cum += hist[v]; if (cum >= total * 0.02) { p2 = v; break; } }
+    cum = 0;
+    for (let v = 255; v >= 0; v--) { cum += hist[v]; if (cum >= total * 0.02) { p98 = v; break; } }
+    const range = Math.max(1, p98 - p2);
+
+    if (threshold) {
+      // Otsu-like threshold using midpoint of stretched histogram
+      const thresh = (p2 + p98) / 2;
+      for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+        const v = lumas[j] < thresh ? 0 : 255;
+        d[i] = d[i+1] = d[i+2] = v;
+      }
+    } else {
+      for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+        let v = Math.round(((lumas[j] - p2) / range) * 255);
+        v = Math.max(0, Math.min(255, v));
+        d[i] = d[i+1] = d[i+2] = v;
+      }
+    }
+    ctx.putImageData(imageData, 0, 0);
+    return canvas;
+  }
+
+  function canvasToBlob(canvas) {
+    return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+  }
+
+  // Cloud OCR via OCR.space free API (much better on real-world photos).
+  // Users can paste their own free API key (25k req/month) at ocr.space/ocrapi/freekey
+  async function cloudOCR(blob, onProgress) {
+    const key = localStorage.getItem('ocrSpaceKey') || 'K87899142388957'; // shared fallback demo key
+    const form = new FormData();
+    form.append('file', blob, 'receipt.jpg');
+    form.append('apikey', key);
+    form.append('OCREngine', '2');           // best engine for receipts
+    form.append('scale', 'true');
+    form.append('isTable', 'true');
+    form.append('detectOrientation', 'true');
+    onProgress && onProgress(0.1, 'Uploading to cloud OCR…');
+    const res = await fetch('https://api.ocr.space/parse/image', {
+      method: 'POST', body: form
+    });
+    if (!res.ok) throw new Error('Cloud OCR HTTP ' + res.status);
+    onProgress && onProgress(0.9, 'Parsing text…');
+    const data = await res.json();
+    if (data.IsErroredOnProcessing) {
+      const msg = Array.isArray(data.ErrorMessage) ? data.ErrorMessage.join(' ') : (data.ErrorMessage || 'Cloud OCR error');
+      throw new Error(msg);
+    }
+    const text = (data.ParsedResults && data.ParsedResults[0] && data.ParsedResults[0].ParsedText) || '';
+    onProgress && onProgress(1.0, 'Done');
+    return text;
+  }
+
+  async function localOCR(blob, onProgress) {
+    const img = await loadImage(blob);
+    // Pass 1: contrast-stretched grayscale
+    const canvas1 = preprocessImage(img, { maxDim: 2000, minDim: 1500, threshold: false });
+    const b1 = await canvasToBlob(canvas1);
+    document.getElementById('previewImg').src = URL.createObjectURL(b1);
+    onProgress && onProgress(0.1, 'Reading text…');
+    const r1 = await Tesseract.recognize(b1, 'eng', {
+      logger: m => { if (m.status === 'recognizing text') onProgress && onProgress(0.1 + m.progress * 0.55, `Reading text ${Math.round(m.progress*100)}%`); },
+      tessedit_pageseg_mode: 6,
+      preserve_interword_spaces: '1',
+    });
+    let text = r1.data.text;
+    let parsed = parseReceipt(text);
+    // Second pass if first was poor
+    if (parsed.items.length < 2 && parsed.summary.total == null) {
+      onProgress && onProgress(0.65, 'Enhanced pass…');
+      const canvas2 = preprocessImage(img, { maxDim: 2400, minDim: 1800, threshold: true });
+      const b2 = await canvasToBlob(canvas2);
+      const r2 = await Tesseract.recognize(b2, 'eng', {
+        logger: m => { if (m.status === 'recognizing text') onProgress && onProgress(0.65 + m.progress * 0.3, `Enhanced pass ${Math.round(m.progress*100)}%`); },
+        tessedit_pageseg_mode: 4,
+        preserve_interword_spaces: '1',
+      });
+      const p2 = parseReceipt(r2.data.text);
+      if (p2.items.length > parsed.items.length || (p2.summary.total != null && parsed.summary.total == null)) {
+        text = r2.data.text; parsed = p2;
+      }
+    }
+    return text;
+  }
+
+  // Handle multiple files: each becomes its own receipt
+  async function handleFiles(fileList) {
+    const files = Array.from(fileList || []).filter(Boolean);
+    if (files.length === 0) return;
+    ensureReceipt();
+
+    // If there's only one file and the active receipt is empty, keep current behaviour.
+    // Otherwise create a fresh receipt per file.
+    const active = activeReceipt();
+    const useCurrent = files.length === 1 && active && active.items.length === 0 && (!active.tax || active.tax === 0) && (!active.tip || active.tip === 0);
+
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      let target = null;
+      if (i === 0 && useCurrent) {
+        target = active;
+        if (files.length === 1) target.label = f.name.replace(/\.[^.]+$/, '').slice(0, 30) || target.label;
+      } else {
+        target = makeReceipt(f.name.replace(/\.[^.]+$/, '').slice(0, 30) || `Receipt ${state.receipts.length + 1}`);
+        state.receipts.push(target);
+      }
+      state.activeReceiptId = target.id;
+      syncTaxTipInputs();
+      render();
+      await handleFile(f, target.id, { index: i, total: files.length });
+    }
+    // Clear the file input so the same file can be re-selected later
+    try { document.getElementById('libraryInput').value = ''; } catch(e){}
+    try { document.getElementById('cameraInput').value = ''; } catch(e){}
+  }
+
+  async function handleFile(file, receiptId, batchInfo) {
+    if (!file) return;
+    const targetReceipt = receiptId
+      ? state.receipts.find(r => r.id === receiptId)
+      : activeReceipt();
     const progEl = document.getElementById('ocrProgress');
     const bar = document.getElementById('ocrBar');
     const status = document.getElementById('ocrStatus');
+    const previewEl = document.getElementById('previewImg');
     progEl.style.display = '';
     bar.style.width = '0%';
-    status.textContent = 'Loading OCR engine…';
+    status.textContent = 'Reading photo…';
+
+    const useCloud = document.getElementById('cloudOcrToggle').checked;
 
     try {
-      const result = await Tesseract.recognize(file, 'eng', {
-        logger: m => {
-          if (m.status) status.textContent = m.status + (m.progress ? ` — ${Math.round(m.progress*100)}%` : '');
-          if (m.progress != null) bar.style.width = (m.progress * 100) + '%';
+      // Convert HEIC if needed
+      let blob = file;
+      const isHeic = (file.type || '').toLowerCase().includes('heic') ||
+                     (file.name || '').toLowerCase().match(/\.heic$|\.heif$/);
+      if (isHeic) {
+        status.textContent = 'Converting HEIC photo…';
+        blob = await ensureWebFormat(file);
+      }
+      previewEl.src = URL.createObjectURL(blob);
+      previewEl.style.display = '';
+
+      // Resize for cloud upload (OCR.space has 1MB limit on free tier)
+      if (useCloud) {
+        const img = await loadImage(blob);
+        const canvas = preprocessImage(img, { maxDim: 1500, minDim: 1000, threshold: false });
+        blob = await canvasToBlob(canvas);
+        previewEl.src = URL.createObjectURL(blob);
+      }
+
+      const onProgress = (frac, msg) => {
+        bar.style.width = Math.round(frac * 100) + '%';
+        if (msg) status.textContent = msg;
+      };
+
+      let text = '';
+      try {
+        if (useCloud) {
+          text = await cloudOCR(blob, onProgress);
+        } else {
+          if (typeof Tesseract === 'undefined') throw new Error('Tesseract not loaded');
+          text = await localOCR(blob, onProgress);
         }
-      });
-      const text = result.data.text;
+      } catch (primaryErr) {
+        console.warn('Primary OCR failed', primaryErr);
+        status.textContent = (useCloud ? 'Cloud' : 'Local') + ' OCR failed — trying the other engine…';
+        if (useCloud) {
+          if (typeof Tesseract !== 'undefined') text = await localOCR(blob, onProgress);
+          else throw primaryErr;
+        } else {
+          text = await cloudOCR(blob, onProgress);
+        }
+      }
+
+      bar.style.width = '100%';
       const parsed = parseReceipt(text);
-      showOCRResult(text, parsed.items, parsed.summary);
-      applyDetectedTotals(parsed.summary);
+      const batch = batchInfo && batchInfo.total > 1;
+      const rId = targetReceipt ? targetReceipt.id : (activeReceipt() && activeReceipt().id);
+
+      if (batch) {
+        // Multi-file mode: auto-add items directly to this file's receipt, skip preview UI
+        parsed.items.forEach(it => addItem(it.name, it.price, rId));
+        applyDetectedTotals(parsed.summary, rId);
+        // Clear the OCR preview box
+        const oc = document.getElementById('ocrResult');
+        if (oc) oc.innerHTML = '';
+      } else {
+        showOCRResult(text, parsed.items, parsed.summary, parsed.confidence);
+        applyDetectedTotals(parsed.summary, rId);
+      }
+
       const bits = [];
       if (parsed.summary.tax != null) bits.push(`tax ${fmt(parsed.summary.tax)}`);
       if (parsed.summary.tip != null) bits.push(`tip ${fmt(parsed.summary.tip)}`);
-      status.textContent = `Found ${parsed.items.length} item(s)` +
-        (bits.length ? ` · auto-filled ${bits.join(' & ')}` : '') + '.';
-      bar.style.width = '100%';
+      const batchPrefix = batch ? `[${batchInfo.index + 1}/${batchInfo.total}] ` : '';
+      if (parsed.items.length === 0 && parsed.summary.total == null) {
+        status.textContent = `${batchPrefix}Couldn't read this photo well.` + (batch ? '' : ' Try the tips above ↑ or add items manually.');
+      } else {
+        const confMsg = parsed.confidence === 'low' ? ' · ⚠️ please review' :
+                        parsed.confidence === 'medium' ? ' · double-check values' : '';
+        status.textContent = `${batchPrefix}Found ${parsed.items.length} item(s)` +
+          (bits.length ? ` · auto-filled ${bits.join(' & ')}` : '') + confMsg + '.';
+      }
     } catch (err) {
-      status.textContent = 'OCR failed: ' + err.message;
+      console.error(err);
+      const batchPrefix = batchInfo && batchInfo.total > 1 ? `[${batchInfo.index + 1}/${batchInfo.total}] ` : '';
+      status.textContent = `${batchPrefix}Error: ` + err.message;
     }
   }
 
   function parseReceipt(text) {
-    const lines = text.split(/\n+/).map(l => l.trim()).filter(Boolean);
-    const items = [];
+    // Clean up common OCR artifacts
+    text = text.replace(/[|‘’`]/g, "'").replace(/[“”]/g, '"');
+    // Fix common OCR errors in numbers: "O" -> "0" inside number context
+    text = text.replace(/(\d)[Oo](\d)/g, '$10$2');
+    const rawLines = text.split(/\n+/).map(l => l.trim()).filter(Boolean);
     const summary = { subtotal: null, tax: null, tip: null, total: null };
-    const priceRe = /(?:[\$£€¥฿₩]?\s*)(\d{1,5}(?:[.,]\d{2}))\s*$/;
-    const skipKw = /^(sub[\s\-]?total|total|amount|balance|change|cash|visa|mastercard|amex|card|paid|due|thank|receipt|invoice|order|table|server|guest|date|time)/i;
+
+    // ---- Regexes ----
+    const priceRe = /(?:^|[\s\$£€¥฿₩])(\d{1,4}(?:[.,]\d{2}))\s*$/;
+    const priceAnywhereRe = /(?:[\$£€¥฿₩])\s*(\d{1,4}(?:[.,]\d{2}))/;
+
     const subtotalRe = /\b(sub[\s\-]?total|purchase\s+subtotal)\b/i;
-    const taxRe = /\b(tax|vat|gst|hst|sales\s*tax|nyc?\s*tax|new\s*york\s*tax)\b/i;
-    const tipRe = /\b(tip|gratuity|service\s*charge)\b/i;
-    const totalRe = /\btotal\b/i;
-    for (const line of lines) {
-      const m = line.match(priceRe);
+    const taxRe = /\b(tax|vat|gst|hst|sales\s*tax|nyc?\s*tax|new\s*york\s*tax)\b(?!\s*percent|\s*\%)/i;
+    const tipOnlyRe = /^(tip|gratuity|service\s*charge|\+\s*tip)\b/i; // "Tip" at line start
+    const totalRe = /\b(total|grand\s*total|amount\s*due)\b(?!.*tip)/i;
+
+    // Anything starting with these words means "this is not an item line"
+    const boilerplateRe = /^(check\s*#|table\b|server\b|ordered\b|guest\b|date\b|time\b|receipt\b|invoice\b|thank\b|interested\b|contact\b|suggested\b|tip\s*percent|price\s*before|change\b|cash\b|visa\b|mastercard\b|amex\b|american\s*express|discover\b|debit\b|credit\s*card|paid\b|due\b|balance\b|amount\b|---+|====+|street\b|avenue\b|road\b|address\b|phone\b|tel\b|fax\b|www|http|@|application\b|approval\b|authoriz|transaction\b|payment\s*id|batch\b|auth\s*code|card\s*reader|merchant\b|contactless\b|sale\b|approved\b|customer\s*copy|merchant\s*copy|x{3,}|\*{3,}|f\d{5}|80pos|88pos|a0{6,}|cwkp|acadia\b)/i;
+    // Also reject lines whose content obviously contains card / auth jargon (not just at start)
+    const insideBoilerRe = /\b(application\s*label|application\s*id|approval\s*code|card\s*reader|transaction\s*type|payment\s*id|authorization)\b/i;
+
+    // Percentage tip line: "20%: ($18.20 Total $117.27)" or "22% (Tip $20.02 ...)"
+    // Also catch malformed OCR like "%: (Tip 18.20" where the digits got dropped
+    const pctTipLineRe = /^\s*\(?\d{1,3}?\s*%[\s:(]|^\s*%\s*[:(]|\(\s*tip\b/i;
+    // Lines that mark the boundary AFTER items finish — only include markers
+    // that reliably appear POST-items, not pre-items. Things like masked card
+    // numbers (XXX5299) and "Mastercard" can appear in the header too, so they
+    // are handled via per-line skipping instead.
+    const itemEndMarkers = /(sub[\s\-]?total|\bgrand\s*total\b|\btotal\s*\$?\s*\d|suggested\s*tip|tip\s*percentage|based\s*on\s*the\s*check|customer\s*copy|merchant\s*copy|thank\s*you\s*(for|!)|application\s*label|approval\s*code)/i;
+
+    // ---- Find where the item section ends ----
+    // Prefer the FIRST occurrence of "Subtotal" since that's the most reliable marker.
+    // If no Subtotal found, fall back to other markers; otherwise consider all lines.
+    let itemEndIdx = rawLines.length;
+    // First look for Subtotal specifically
+    for (let i = 0; i < rawLines.length; i++) {
+      if (subtotalRe.test(rawLines[i])) { itemEndIdx = i; break; }
+    }
+    // If Subtotal wasn't found, use the broader itemEndMarkers
+    if (itemEndIdx === rawLines.length) {
+      for (let i = 0; i < rawLines.length; i++) {
+        if (itemEndMarkers.test(rawLines[i])) { itemEndIdx = i; break; }
+      }
+    }
+
+    // ---- First pass: extract summary values from ANYWHERE in the text ----
+    for (let i = 0; i < rawLines.length; i++) {
+      const line = rawLines[i];
+      // Skip the "Suggested Tip" percentage section entirely for summary extraction
+      if (pctTipLineRe.test(line)) continue;
+
+      let m = line.match(priceRe);
+      if (!m) m = line.match(priceAnywhereRe);
       if (!m) continue;
       const price = parseFloat(m[1].replace(',', '.'));
       if (isNaN(price) || price <= 0 || price > 99999) continue;
-      let label = line.slice(0, m.index).replace(/[\$£€¥฿₩]/g, '').trim();
-      const labelClean = label.replace(/\s+/g, ' ');
-      if (taxRe.test(labelClean)) { summary.tax = (summary.tax || 0) + price; continue; }
-      if (tipRe.test(labelClean)) { summary.tip = price; continue; }
-      if (subtotalRe.test(labelClean)) { summary.subtotal = price; continue; }
-      if (totalRe.test(labelClean)) { summary.total = price; continue; }
-      let name = labelClean.replace(/^\d+\s*[xX]\s*/, '').trim();
-      if (!name || name.length < 2) continue;
-      if (skipKw.test(name)) continue;
-      items.push({ name, price });
+
+      let label = line.slice(0, m.index).replace(/[\$£€¥฿₩]/g, '').trim().replace(/\s+/g, ' ');
+
+      if (subtotalRe.test(label) && summary.subtotal == null) { summary.subtotal = price; }
+      else if (taxRe.test(label) && summary.tax == null) {
+        // Allow "Tax 8.875% 2.89" style — the % is a rate, the price is the amount.
+        // Only skip if the label is ONLY a rate (no separate dollar amount) — but since
+        // we already have a captured price, any taxRe match should count.
+        summary.tax = price;
+      }
+      else if (tipOnlyRe.test(label) && !/suggested|percent/i.test(label) && summary.tip == null) { summary.tip = price; }
+      else if (totalRe.test(label) && !/suggested|percent|tip\s*\$/i.test(label) && summary.total == null) { summary.total = price; }
     }
-    return { items, summary };
+
+    // Fallback: if we didn't find subtotal but found tax + total, derive it
+    if (summary.subtotal == null && summary.tax != null && summary.total != null) {
+      const derived = summary.total - summary.tax - (summary.tip || 0);
+      if (derived > 0) summary.subtotal = +derived.toFixed(2);
+    }
+
+    // Sanity check tip: tip should be less than subtotal (if known).
+    // A common OCR failure is reading "+ Tip: $117.27" where $117.27 is actually the total.
+    if (summary.tip != null && summary.subtotal != null && summary.tip > summary.subtotal * 0.6) {
+      // Tip > 60% of subtotal is implausible — probably misread as the total
+      if (summary.total == null) summary.total = summary.tip;
+      summary.tip = null;
+    }
+
+    // ---- Helper: split a line that merges multiple items into one ----
+    // e.g. "1 Iced Cappuccino 1 Double Capuccino $46.00" → 2 items
+    //      "Americano 1 Potato Latkes 91.00 $8.07"       → 2 items
+    // Strategy: find all "qty + CapitalizedWord" boundaries within the label part.
+    // The last chunk keeps the trailing price; earlier chunks get price = 0 (user edits).
+    function splitMergedLabel(label, trailingPrice) {
+      // Also detect mid-line prices that belong to earlier chunks
+      // Look for pattern: label-text <price> label-text (embedded prices)
+      // Split points: spaces followed by "digit(s) + space + Capital letter"
+      const splitPts = [];
+      const splitRe = /\s(?=\d+\s+[A-Z][a-z])/g;
+      let m;
+      while ((m = splitRe.exec(label)) !== null) {
+        if (m.index > 2) splitPts.push(m.index);
+      }
+      if (splitPts.length === 0) return [{ name: label, price: trailingPrice }];
+
+      const parts = [];
+      let start = 0;
+      for (const pt of splitPts) {
+        parts.push(label.slice(start, pt).trim());
+        start = pt + 1;
+      }
+      parts.push(label.slice(start).trim());
+
+      // Also scan each part for an embedded price (digits.digits, no $)
+      const embeddedPriceRe = /\s(\d{1,3}[.,]\d{2})\s*$/;
+      const result = parts.map((p, idx) => {
+        const em = p.match(embeddedPriceRe);
+        if (em) {
+          const embPrice = parseFloat(em[1].replace(',', '.'));
+          const cleanName = p.slice(0, em.index).trim();
+          return { name: cleanName, price: embPrice };
+        }
+        // Last part gets the trailing price; others get 0 (user will edit)
+        return { name: p, price: idx === parts.length - 1 ? trailingPrice : 0 };
+      });
+      return result;
+    }
+
+    // ---- Detect orphan summary labels (on their own lines, no value) ----
+    // If we see "Subtotal" / "Tax" / "Total" on a line with no price, any nearby
+    // bare-number line is probably that summary value — not an item price.
+    const orphanSummaryPrices = new Set();
+    for (let i = 0; i < rawLines.length; i++) {
+      const line = rawLines[i];
+      const hasPrice = priceRe.test(line) || priceAnywhereRe.test(line);
+      if (hasPrice) continue;
+      if (!(subtotalRe.test(line) || taxRe.test(line) || totalRe.test(line) || tipOnlyRe.test(line))) continue;
+      // Look at the next 2 lines for a bare numeric value
+      for (let j = i + 1; j < Math.min(i + 3, rawLines.length); j++) {
+        const bare = rawLines[j].match(/^\s*\$?\s*(\d{1,4}[.,]\d{2})\s*$/);
+        if (bare) {
+          const p = parseFloat(bare[1].replace(',', '.'));
+          if (!isNaN(p) && p > 0) orphanSummaryPrices.add(+p.toFixed(2));
+          break;
+        }
+      }
+    }
+
+    // ---- Second pass: extract items ONLY from the item section ----
+    const rawItems = [];
+    for (let i = 0; i < itemEndIdx; i++) {
+      const line = rawLines[i];
+
+      // Hard skips
+      if (boilerplateRe.test(line)) continue;
+      if (insideBoilerRe.test(line)) continue;
+      if (pctTipLineRe.test(line)) continue;
+      if (/x{3,}\d|x{4,}/i.test(line)) continue;
+      if (/\d{2}:\d{2}\s*(am|pm)?/i.test(line)) continue; // times
+      if (/^\d{1,2}\/\d{1,2}\/\d{2,4}/.test(line)) continue; // dates
+
+      let m = line.match(priceRe);
+      if (!m) m = line.match(priceAnywhereRe);
+      if (!m) continue;
+      const price = parseFloat(m[1].replace(',', '.'));
+      if (isNaN(price) || price <= 0 || price > 9999) continue;
+
+      let label = line.slice(0, m.index).replace(/[\$£€¥฿₩]/g, '').trim().replace(/\s+/g, ' ');
+
+      // Skip summary lines
+      if (subtotalRe.test(label) || taxRe.test(label) || tipOnlyRe.test(label) || totalRe.test(label)) continue;
+
+      // Split multi-item merged lines BEFORE the strict name sanitisation
+      const pieces = splitMergedLabel(label, price);
+
+      for (const piece of pieces) {
+        // Strip leading qty like "2x", "1 x", "2 ", "(2)"
+        let name = piece.name.replace(/^\(?\s*\d+\s*\)?\s*[xX]?\s*/, '').trim();
+        // Strip trailing qty "1 Iced Cappuccino 1"
+        name = name.replace(/\s+\d+\s*$/, '').trim();
+        // Strip leading punctuation
+        name = name.replace(/^[%:()\s\-_.]+/, '').trim();
+        if (!name || name.length < 3) continue;
+
+        const letters = (name.match(/[a-zA-Z]/g) || []).length;
+        const digits = (name.match(/\d/g) || []).length;
+        if (letters < 3) continue;
+        if (letters / name.length < 0.4) continue;
+        if (digits > letters) continue;
+        if (/\d{3}[\-\s]\d{3,4}/.test(name)) continue;
+
+        // Reject names that contain obvious boilerplate words
+        if (/\b(application|approval|authorization|transaction|payment\s*id|card\s*reader|batch|approved|mastercard|visa|amex|contactless|customer\s*copy|merchant\s*copy|tip\b|gratuity|suggested)\b/i.test(name)) continue;
+        // Reject if contains a % sign (pct tip line that slipped through)
+        if (/%/.test(name)) continue;
+
+        // Reject if the price matches an orphan-summary value
+        if (piece.price > 0 && orphanSummaryPrices.has(+piece.price.toFixed(2))) continue;
+
+        rawItems.push({ name, price: piece.price });
+      }
+    }
+
+    // ---- Filter: drop items whose price matches a known summary figure ----
+    // Keep items with price == 0 (split-item placeholders — user will edit the price)
+    const summaryVals = [summary.subtotal, summary.tax, summary.tip, summary.total].filter(v => v != null);
+    let items = rawItems.filter(it => it.price === 0 || !summaryVals.some(v => Math.abs(it.price - v) < 0.01));
+
+    // ---- Sanity check against subtotal ----
+    if (summary.subtotal != null && items.length) {
+      // ALWAYS drop items priced >= 98% of subtotal — they're almost certainly the
+      // total/auth amount mis-classified as an item. Better to show nothing than wrong values.
+      items = items.filter(it => it.price < summary.subtotal * 0.98);
+
+      // If item sum still wildly exceeds subtotal, keep only cheapest items whose sum ≤ subtotal * 1.1
+      const sum = items.reduce((s, it) => s + it.price, 0);
+      if (sum > summary.subtotal * 1.4 && items.length > 1) {
+        const sorted = [...items].sort((a, b) => a.price - b.price);
+        const kept = [];
+        let running = 0;
+        for (const it of sorted) {
+          // Zero-priced split items always kept (placeholders)
+          if (it.price === 0) { kept.push(it); continue; }
+          if (running + it.price <= summary.subtotal * 1.1) { kept.push(it); running += it.price; }
+        }
+        items = kept;
+      }
+    }
+
+    // ---- De-duplicate ----
+    const seen = new Set();
+    const dedup = [];
+    for (const it of items) {
+      const key = it.name.toLowerCase().replace(/\s+/g, '') + '_' + it.price.toFixed(2);
+      if (!seen.has(key)) { seen.add(key); dedup.push(it); }
+    }
+
+    // ---- Confidence flag ----
+    // If any item has price 0 (split placeholder awaiting user input), confidence is low
+    const hasZeroPriced = dedup.some(it => it.price === 0);
+    let confidence = 'high';
+    if (dedup.length === 0) confidence = 'none';
+    else if (hasZeroPriced) confidence = 'low';
+    else if (summary.subtotal != null) {
+      const sum = dedup.reduce((s, it) => s + it.price, 0);
+      const diff = Math.abs(sum - summary.subtotal);
+      if (diff > summary.subtotal * 0.15) confidence = 'low';
+      else if (diff > summary.subtotal * 0.05) confidence = 'medium';
+    } else if (dedup.length < 2) {
+      confidence = 'low';
+    }
+
+    return { items: dedup, summary, confidence };
   }
 
-  function applyDetectedTotals(summary) {
-    const taxEl = document.getElementById('taxAmount');
-    const tipEl = document.getElementById('tipAmount');
-    if (summary.tax != null && !taxEl.value) taxEl.value = summary.tax.toFixed(2);
-    if (summary.tip != null && !tipEl.value) tipEl.value = summary.tip.toFixed(2);
+  function applyDetectedTotals(summary, receiptId) {
+    const target = receiptId
+      ? state.receipts.find(r => r.id === receiptId)
+      : activeReceipt();
+    if (!target) return;
+    if (summary.tax != null && (!target.tax || target.tax === 0)) target.tax = +summary.tax;
+    if (summary.tip != null && (!target.tip || target.tip === 0)) target.tip = +summary.tip;
+    syncTaxTipInputs();
     render();
   }
 
-  function showOCRResult(rawText, items, summary) {
+  function showOCRResult(rawText, items, summary, confidence) {
     const el = document.getElementById('ocrResult');
     let summaryHtml = '';
     if (summary && (summary.subtotal != null || summary.tax != null || summary.tip != null || summary.total != null)) {
@@ -1253,17 +2438,39 @@
       if (summary.total != null) rows.push(`<div class="row-line"><span>Total</span><span>${fmt(summary.total)}</span></div>`);
       summaryHtml = `<div class="detected-summary"><div class="head">📋 Receipt summary</div>${rows.join('')}</div>`;
     }
+
+    // Confidence warning
+    let warningHtml = '';
+    if (confidence === 'low') {
+      const itemSum = items.reduce((s, it) => s + it.price, 0);
+      const expected = summary && summary.subtotal != null ? ` (expected ~${fmt(summary.subtotal)})` : '';
+      warningHtml = `<div class="ocr-warn">⚠️ <strong>Low confidence</strong> — items sum to ${fmt(itemSum)}${expected}. Please review prices below or <a href="#" onclick="clearOCRItems();return false;">clear &amp; enter manually</a>.</div>`;
+    } else if (confidence === 'medium') {
+      warningHtml = `<div class="ocr-warn medium">ℹ️ Some values may need adjusting — double-check before adding.</div>`;
+    }
+
     if (items.length === 0) {
-      el.innerHTML = summaryHtml + `<div class="hint" style="margin-top:10px;text-align:center;">No items detected.</div><details class="raw"><summary>Raw OCR</summary><pre>${escapeHtml(rawText)}</pre></details>`;
+      el.innerHTML = summaryHtml + warningHtml +
+        `<div class="hint" style="margin-top:10px;text-align:center;">No items detected. Add them manually below ↓</div>` +
+        `<details class="raw" ${items.length === 0 ? 'open' : ''}>
+          <summary>✏️ Show / edit raw OCR text</summary>
+          <div class="hint" style="margin:6px 0;">Edit this text and hit <em>Re-parse</em> to re-run detection — useful when OCR was mostly right but missed a line.</div>
+          <textarea id="rawOcrText" class="raw-edit" spellcheck="false">${escapeHtml(rawText)}</textarea>
+          <button class="btn sm" style="margin-top:6px;" onclick="reparseOCR()">↻ Re-parse</button>
+        </details>`;
       return;
     }
-    el.innerHTML = summaryHtml + `
+    el.innerHTML = summaryHtml + warningHtml + `
       <div style="margin-top:12px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;">
           <strong style="font-size:13px;">Detected items (${items.length})</strong>
-          <button class="btn sm" onclick="addAllOCRItems()">Add all →</button>
+          <div style="display:flex;gap:6px;">
+            <button class="btn sm secondary" onclick="clearOCRItems()" style="padding:4px 10px;font-size:12px;">Clear</button>
+            <button class="btn sm" onclick="addAllOCRItems()">Add all →</button>
+          </div>
         </div>
         <div id="ocrItems"></div>
+        <details class="raw" style="margin-top:8px;"><summary>Show raw OCR text</summary><pre>${escapeHtml(rawText)}</pre></details>
       </div>`;
     const container = document.getElementById('ocrItems');
     items.forEach((it, idx) => {
@@ -1292,6 +2499,31 @@
     });
   }
 
+  function reparseOCR() {
+    const ta = document.getElementById('rawOcrText');
+    if (!ta) return;
+    const text = ta.value;
+    const parsed = parseReceipt(text);
+    showOCRResult(text, parsed.items, parsed.summary, parsed.confidence);
+    applyDetectedTotals(parsed.summary);
+    const status = document.getElementById('ocrStatus');
+    if (status) {
+      const bits = [];
+      if (parsed.summary.tax != null) bits.push('tax ' + fmt(parsed.summary.tax));
+      if (parsed.summary.tip != null) bits.push('tip ' + fmt(parsed.summary.tip));
+      status.textContent = 'Re-parsed: found ' + parsed.items.length + ' item(s)' +
+        (bits.length ? ' · ' + bits.join(' & ') : '') + '.';
+    }
+    toast('Re-parsed');
+  }
+
+  function clearOCRItems() {
+    const el = document.getElementById('ocrResult');
+    if (el) el.innerHTML = '';
+    const status = document.getElementById('ocrStatus');
+    if (status) status.textContent = 'Cleared. Add items manually below, or retake the photo.';
+  }
+
   function addAllOCRItems() {
     const inputs = document.querySelectorAll('#ocrItems .ocr-item');
     let count = 0;
@@ -1311,7 +2543,7 @@
   const ua = document.getElementById('uploadArea');
   ['dragover','dragenter'].forEach(ev => ua.addEventListener(ev, e => { e.preventDefault(); ua.classList.add('drag'); }));
   ['dragleave','drop'].forEach(ev => ua.addEventListener(ev, e => { e.preventDefault(); ua.classList.remove('drag'); }));
-  ua.addEventListener('drop', e => { const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) handleFile(f); });
+  ua.addEventListener('drop', e => { const files = e.dataTransfer.files; if (files && files.length) handleFiles(files); });
 
   render();
   initLiff();
